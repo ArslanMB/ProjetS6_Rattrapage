@@ -24,15 +24,12 @@ class PentagoGame:
     def place_marble(self, row, col):
         if self.board[row, col] == 0:
             self.board[row, col] = self.current_player
-            if self.check_win():
-                self.winner = self.current_player
-                self.game_state = 'GAME_OVER'
-            else:
-                self.game_phase = "ROTATION"
+            self.game_phase = "ROTATION"                          
             return True
         return False
 
     def start_quadrant_rotation_animation(self, quadrant_idx, direction):
+        # 1 = horaire , -1 = anti-horaire
         self.game_phase = "ANIMATING_ROTATION"
         self.animating_quadrant_idx = quadrant_idx
         self.animating_direction = direction
@@ -40,8 +37,9 @@ class PentagoGame:
         self.board_before_rotation = np.copy(self.board)
 
     def update_rotation_animation(self):
+        if self.board_before_rotation is None:
+            return False
         self.animation_angle += ROTATION_SPEED * self.animating_direction
-        
         if abs(self.animation_angle) >= 90:
             self.animation_angle = 90 * self.animating_direction
 
@@ -57,10 +55,14 @@ class PentagoGame:
             self.animation_angle = 0
             self.board_before_rotation = None
 
-            win_after_rotation = self.check_win()
+            # Chek de la victoir post rota
+            win_code = self.check_win()
             
-            if win_after_rotation:
-                self.winner = self.current_player
+            if win_code == PLAYER_1 or win_code == PLAYER_2:
+                self.winner = win_code
+                self.game_state = 'GAME_OVER'
+            elif win_code == 2:  # double-victoire = nul
+                self.winner = 0
                 self.game_state = 'GAME_OVER'
             elif np.all(self.board != 0):
                 self.winner = 0
@@ -76,26 +78,39 @@ class PentagoGame:
 
     @staticmethod
     def check_win_on_board(board_state):
+        p1_win = False
+        p2_win = False
+
+        # Lignes
         for r in range(BOARD_ROWS):
             for c in range(BOARD_COLS - 4):
-                segment = board_state[r, c:c+5]
-                if np.sum(segment) == 5: return PLAYER_1
-                if np.sum(segment) == -5: return PLAYER_2
+                s = np.sum(board_state[r, c:c+5])
+                if s == 5:   p1_win = True
+                if s == -5:  p2_win = True
 
+        # Colonnes
         for c in range(BOARD_COLS):
             for r in range(BOARD_ROWS - 4):
-                segment = board_state[r:r+5, c]
-                if np.sum(segment) == 5: return PLAYER_1
-                if np.sum(segment) == -5: return PLAYER_2
+                s = np.sum(board_state[r:r+5, c])
+                if s == 5:   p1_win = True
+                if s == -5:  p2_win = True
 
+        # Diagonales
         for r in range(BOARD_ROWS - 4):
             for c in range(BOARD_COLS - 4):
-                diag = board_state[r:r+5, c:c+5].diagonal()
-                if np.sum(diag) == 5: return PLAYER_1
-                if np.sum(diag) == -5: return PLAYER_2
-                anti_diag = np.fliplr(board_state[r:r+5, c:c+5]).diagonal()
-                if np.sum(anti_diag) == 5: return PLAYER_1
-                if np.sum(anti_diag) == -5: return PLAYER_2
+                d = board_state[r:r+5, c:c+5].diagonal()
+                ad = np.fliplr(board_state[r:r+5, c:c+5]).diagonal()
+                sd = np.sum(d)
+                sad = np.sum(ad)
+                if sd == 5 or sad == 5:     p1_win = True
+                if sd == -5 or sad == -5:   p2_win = True
+
+        if p1_win and p2_win:
+            return 2  # double-victoire  
+        if p1_win:
+            return PLAYER_1
+        if p2_win:
+            return PLAYER_2
         return 0
 
     @staticmethod
@@ -106,6 +121,9 @@ class PentagoGame:
 
     @staticmethod
     def get_board_after_rotation(board_state, quadrant_idx, direction):
+
+        #direction = 1 = 90° anti-horaire et -1 = 90° horaire 
+ 
         new_board = np.copy(board_state)
         row_start = (quadrant_idx // 2) * QUADRANT_SIZE
         col_start = (quadrant_idx % 2) * QUADRANT_SIZE

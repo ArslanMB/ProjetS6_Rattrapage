@@ -1,7 +1,7 @@
 import pygame
 import sys
 from pentago_logic import PentagoGame, BOARD_ROWS, BOARD_COLS, QUADRANT_SIZE, PLAYER_1, PLAYER_2, ROTATION_SPEED
-from pentago_mcts import find_best_move_mcts
+from pentago_bot_1 import find_best_move_minimax
 
 SQUARE_SIZE = 100
 BOARD_WIDTH = BOARD_COLS * SQUARE_SIZE
@@ -29,6 +29,13 @@ COLOR_BLACK_SHADOW = (20, 20, 20)
 AI_DEPTH = 2 
 AI_TIME_BUDGET_SECONDS = 2
 
+ROT_BTN_W = 36
+ROT_BTN_H = 36
+ROT_BTN_MARGIN = 6
+SYMBOL_CCW = '↺'
+SYMBOL_CW  = '↻'
+ROTATION_BUTTONS = []  
+
 def draw_marble_3d(screen, center_x, center_y, color, shadow_color, radius):
     pygame.draw.circle(screen, shadow_color, (center_x + 3, center_y + 3), radius)
     pygame.draw.circle(screen, color, (center_x, center_y), radius)
@@ -48,6 +55,9 @@ def draw_game_board(screen, game_instance):
 
     if game_instance.game_phase == "ANIMATING_ROTATION":
         board_to_draw = game_instance.board_before_rotation
+        if board_to_draw is None:
+            print("Erreur : board_before_rotation n'est pas initialisé.")
+            return
         q_row_start_idx = (game_instance.animating_quadrant_idx // 2) * QUADRANT_SIZE
         q_col_start_idx = (game_instance.animating_quadrant_idx % 2) * QUADRANT_SIZE
         
@@ -75,7 +85,7 @@ def draw_game_board(screen, game_instance):
         for r in range(BOARD_ROWS):
             for c in range(BOARD_COLS):
                 if not (q_row_start_idx <= r < q_row_start_idx + QUADRANT_SIZE and
-                        q_col_start_idx <= c < q_col_start_idx + QUADRANT_SIZE):
+                        q_col_start_idx <= c < q_row_start_idx + QUADRANT_SIZE):  
                     center_x = BOARD_OFFSET_X + int(c * SQUARE_SIZE + SQUARE_SIZE / 2)
                     center_y = BOARD_OFFSET_Y + int(r * SQUARE_SIZE + SQUARE_SIZE / 2)
                     marble_val = board_to_draw[r, c]
@@ -96,19 +106,52 @@ def draw_game_board(screen, game_instance):
 
     if game_instance.game_phase == "ROTATION":
         font = pygame.font.Font(None, INFO_FONT_SIZE)
-        text_surface = font.render("Rotation: clic HAUT/BAS du quadrant pour tourner", True, COLOR_BLACK)
+        text_surface = font.render("Rotation: cliquez un bouton ↺/↻ sur un quadrant (ou clic haut/bas).", True, COLOR_BLACK) 
         screen.blit(text_surface, (BOARD_OFFSET_X, 10))
-        draw_rotation_highlights(screen)
+        draw_rotation_controls(screen)  
 
-def draw_rotation_highlights(screen):
+def draw_rotation_controls(screen):
+    global ROTATION_BUTTONS
+    ROTATION_BUTTONS = []
+    font = pygame.font.SysFont("arialunicode", 28)
+
     for i in range(4):
         row_start = (i // 2) * QUADRANT_SIZE * SQUARE_SIZE
         col_start = (i % 2) * QUADRANT_SIZE * SQUARE_SIZE
-        quadrant_rect = pygame.Rect(BOARD_OFFSET_X + col_start, BOARD_OFFSET_Y + row_start,
-                                    QUADRANT_SIZE * SQUARE_SIZE, QUADRANT_SIZE * SQUARE_SIZE)
-        highlight_surface = pygame.Surface((quadrant_rect.width, quadrant_rect.height), pygame.SRCALPHA)
-        highlight_surface.fill(COLOR_HIGHLIGHT)
-        screen.blit(highlight_surface, quadrant_rect.topleft)
+        quadrant_rect = pygame.Rect(
+            BOARD_OFFSET_X + col_start,
+            BOARD_OFFSET_Y + row_start,
+            QUADRANT_SIZE * SQUARE_SIZE,
+            QUADRANT_SIZE * SQUARE_SIZE
+        )
+
+        if i in (0, 1): 
+            y_btn = quadrant_rect.top - 30
+        else:  
+            y_btn = quadrant_rect.bottom + 30
+
+        ccw_center = (quadrant_rect.centerx - 30, y_btn)
+        ccw_rect = pygame.Rect(0, 0, 40, 40)
+        ccw_rect.center = ccw_center
+        pygame.draw.circle(screen, COLOR_BUTTON, ccw_center, 20)
+        text_ccw = font.render("↺", True, COLOR_BUTTON_TEXT)
+        screen.blit(text_ccw, text_ccw.get_rect(center=ccw_center))
+        ROTATION_BUTTONS.append((ccw_rect, i, +1)) 
+
+        cw_center = (quadrant_rect.centerx + 30, y_btn)
+        cw_rect = pygame.Rect(0, 0, 40, 40)
+        cw_rect.center = cw_center
+        pygame.draw.circle(screen, COLOR_BUTTON, cw_center, 20)
+        text_cw = font.render("↻", True, COLOR_BUTTON_TEXT)
+        screen.blit(text_cw, text_cw.get_rect(center=cw_center))
+        ROTATION_BUTTONS.append((cw_rect, i, -1)) 
+
+
+def _draw_button_symbol(screen, rect, symbol):
+    font = pygame.font.SysFont("arialunicode", 28)
+    text_surface = font.render(symbol, True, COLOR_BUTTON_TEXT)
+    text_rect = text_surface.get_rect(center=rect.center)
+    screen.blit(text_surface, text_rect)
 
 def main():
     pygame.init()
@@ -117,8 +160,8 @@ def main():
     game = PentagoGame()
     clock = pygame.time.Clock()
 
-    title_font = pygame.font.Font(None, 90)
-    button_font = pygame.font.Font(None, 50)
+    title_font = pygame.font.SysFont("arialunicode", 28)
+    button_font = pygame.font.SysFont("arialunicode", 28)
     
     start_pvp_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 70, 300, 70)
     start_pva_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 20, 300, 70)
@@ -151,14 +194,24 @@ def main():
                     elif game.game_phase == "ROTATION":
                         if game_mode == "PVP" or (game_mode == "PVA" and game.current_player == PLAYER_1):
                             mouseX, mouseY = event.pos
-                            quadrant_x = (mouseX - BOARD_OFFSET_X) // (QUADRANT_SIZE * SQUARE_SIZE)
-                            quadrant_y = (mouseY - BOARD_OFFSET_Y) // (QUADRANT_SIZE * SQUARE_SIZE)
-                            quadrant_idx = quadrant_y * 2 + quadrant_x
-                            quadrant_center_y_on_screen = BOARD_OFFSET_Y + (quadrant_y * QUADRANT_SIZE + 1.5) * SQUARE_SIZE
-                            direction = 1 if mouseY < quadrant_center_y_on_screen else -1
-                            
-                            if 0 <= quadrant_idx < 4:
-                                game.start_quadrant_rotation_animation(quadrant_idx, direction)
+
+                            clicked_button = False
+                            for rect, q_idx, direction in ROTATION_BUTTONS:
+                                if rect.collidepoint(event.pos):
+                                    game.start_quadrant_rotation_animation(q_idx, direction)
+                                    clicked_button = True
+                                    break
+
+                            if not clicked_button:
+                                # j'ai gardé le meca d'origine au cas ou (le joueur a le choix)
+                                quadrant_x = (mouseX - BOARD_OFFSET_X) // (QUADRANT_SIZE * SQUARE_SIZE)
+                                quadrant_y = (mouseY - BOARD_OFFSET_Y) // (QUADRANT_SIZE * SQUARE_SIZE)
+                                quadrant_idx = quadrant_y * 2 + quadrant_x
+                                quadrant_center_y_on_screen = BOARD_OFFSET_Y + (quadrant_y * QUADRANT_SIZE + 1.5) * SQUARE_SIZE
+                                direction = 1 if mouseY < quadrant_center_y_on_screen else -1
+                                
+                                if 0 <= quadrant_idx < 4:
+                                    game.start_quadrant_rotation_animation(quadrant_idx, direction)
 
                 elif game.game_state == 'GAME_OVER':
                     game.reset_game()
@@ -172,7 +225,7 @@ def main():
                 pygame.time.wait(10)
 
                 if game.game_phase == "PLACEMENT":
-                    best_move = find_best_move_mcts(game, AI_TIME_BUDGET_SECONDS)
+                    best_move = find_best_move_minimax(game, depth=2)
                     if best_move:
                         r, c, quad_idx, direction = best_move
                         game.place_marble(r, c)
