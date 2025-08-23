@@ -19,23 +19,6 @@ python main.py
 * Rotation : clic sur un bouton du quadrant (↺ anti-horaire / ↻ horaire) ou clic dans la moitié haute/basse du quadrant.
 * Fin de partie : clic pour revenir au menu.
 
-## Arborescence
-
-PROJETS6_RATTRAPAGE/
-├─ alphabeta_ia/
-│  ├─ alpha_beta.py        # Minimax + Alpha-Beta, caches, timing
-│  └─ opening_book.py      # Livre d’ouvertures
-├─ core/
-│  ├─ constants.py         # Constantes du jeu
-│  └─ pentago_logic.py     # Règles, état, rotations, victoire
-├─ gui/
-│  └─ draw.py              # Rendu Pygame (grille, billes, boutons, HUD)
-├─ mtcs_ia/
-│  └─ pentago_mcts.py      # MCTS 
-├─ main.py                 # Boucle de jeu, événements, modes
-├─ self_play_stats.py      # Tournoi / statistiques (optionnel)
-└─ README.md
-
 ## Réglages IA
 
 * Profondeurs/budgets modifiables dans `main.py` (sections PvA / IA-IA).
