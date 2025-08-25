@@ -3,6 +3,7 @@ import tkinter as tk
 import random
 from typing import Optional, Tuple
 
+
 Coord = Tuple[int, int]
 Rotation = Tuple[int, str]  # (quadrant in 0..3, direction in {"CW","CCW"})
 Move = Tuple[Coord, Rotation]
@@ -103,7 +104,8 @@ class Pentago:
             return "O"
         if all(self.board[r][c] != "." for r in range(6) for c in range(6)):
             return "Draw"
-        return None
+            return None
+        
 
     def is_terminal(self) -> bool:
         return self.winner() is not None
@@ -317,16 +319,18 @@ class PentagoGUI:
         self.block_inputs(True)
         self.status.config(text="Le bot joue...")
 
-        # Choisit un coup aléatoire ((r,c), (q,dir)) et le joue en une fois.
-        moves = self.game.legal_moves()
-        if not moves:
-            # plus de coups -> draw forcé
+        from greedy_ai_eloi import GreedyAI
+        ai = GreedyAI(self.bot_symbol)
+        move = ai.choose_move(self.game)
+
+        if move is None:
             self.bot_thinking = False
             self.block_inputs(False)
             return
 
-        placement, rotation = random.choice(moves)
+        placement, rotation = move
         self.game.play(placement, rotation)
+
 
         winner = self.game.winner()
         self.draw()
