@@ -1,13 +1,14 @@
 # main.py
 import sys
 import pygame
+import time
 
 from core.pentago_logic import PentagoGame   # garde tes chemins actuels
 from core.constants import PLAYER_1, PLAYER_2, BOARD_ROWS, BOARD_COLS, QUADRANT_SIZE
-
-from alphabeta_ia.alpha_beta import (
-    timed_find_best_move_minimax, reset_timing, get_timing_stats
-)
+from optimized_mcts import OptimizedMCTS
+#from alphabeta_ia.alpha_beta import (
+#    timed_find_best_move_minimax, reset_timing, get_timing_stats
+#)
 
 # -- UI --
 from gui.draw import (
@@ -29,12 +30,16 @@ def main():
     msg_font = pygame.font.Font(None, 60)
     restart_font = pygame.font.Font(None, 30)
 
+    mcts_bot=OptimizedMCTS(time_limit=10.0, exploration_constant=0.7)
+    
     # Boutons du menu
-    start_pvp_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 70, 300, 70)
-    start_pva_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 20, 300, 70)
-    start_aiai_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 110, 300, 70)
+    start_pvp_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 110, 300, 70)
+    start_pva_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 20, 300, 70)
+    start_pvmcts_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 70, 300, 70)
+    start_aiai_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 + 160, 300, 70)
 
-    game_mode = None  # "PVP", "PVA", "AIAI"
+
+    game_mode = None  # "PVP", "PVA", "PVMCTS", "AIAI"
 
     while True:
         # === Events ===
@@ -46,29 +51,35 @@ def main():
                 # --- Menu principal ---
                 if game.game_state == 'START_MENU':
                     if start_pvp_button_rect.collidepoint(event.pos):
-                        game_mode = "PVP"; game.game_state = 'PLAYING'; reset_timing()
+                        game_mode = "PVP"; game.game_state = 'PLAYING'; 
                     elif start_pva_button_rect.collidepoint(event.pos):
-                        game_mode = "PVA"; game.game_state = 'PLAYING'; reset_timing()
+                        game_mode = "PVA"; game.game_state = 'PLAYING';
+                    elif start_pvmcts_button_rect.collidepoint(event.pos):
+                        game_mode = "PVMCTS"; game.game_state = 'PLAYING'; 
+                        print(f"[Game] Starting MCTS AI mode ")
                     elif start_aiai_button_rect.collidepoint(event.pos):
-                        game_mode = "AIAI"; game.game_state = 'PLAYING'; reset_timing()
+                        game_mode = "AIAI"; game.game_state = 'PLAYING';
                 
                 # ----- En cours de partie -----
                 elif game.game_state == 'PLAYING':
                     if game.game_phase == "PLACEMENT":
-                        if game_mode == "PVP" or (game_mode == "PVA" and game.current_player == PLAYER_1):
+                        if game_mode in ["PVP", "PVA", "PVMCTS"] and game.current_player == PLAYER_1:
                             mouseX, mouseY = event.pos
-                            row = (mouseY - 55) // 110  # correspond à BOARD_OFFSET_Y / SQUARE_SIZE (voir draw.py)
+                            row = (mouseY - 55) // 110
                             col = (mouseX - 55) // 110
                             if 0 <= row < BOARD_ROWS and 0 <= col < BOARD_COLS:
-                                game.place_marble(row, col)
+                                success = game.place_marble(row, col)
+                                if success:
+                                    print(f"[Human] Placed marble at ({row}, {col})")
 
                     elif game.game_phase == "ROTATION":
-                        if game_mode == "PVP" or (game_mode == "PVA" and game.current_player == PLAYER_1):
+                        if game_mode in ["PVP", "PVA", "PVMCTS"] and game.current_player == PLAYER_1:
                             # D'abord: boutons ↺/↻ 
                             clicked_button = False
                             for rect, q_idx, direction in rotation_buttons():
                                 if rect.collidepoint(event.pos):
                                     game.start_quadrant_rotation_animation(q_idx, direction)
+                                    print(f"[Human] Rotating quadrant {q_idx} direction {direction}")
                                     clicked_button = True
                                     break
 
@@ -83,9 +94,11 @@ def main():
                                 direction = 1 if mouseY < quadrant_center_y_on_screen else -1
                                 if 0 <= quadrant_idx < 4:
                                     game.start_quadrant_rotation_animation(quadrant_idx, direction)
+                                    print(f"[Human] Quadrant-click rotation: {quadrant_idx} direction {direction}")
 
                 # --- Fin de partie ---
                 elif game.game_state == 'GAME_OVER':
+                    print("[Game] Returning to main menu")
                     game.reset_game()
                     game_mode = None
 
@@ -118,6 +131,21 @@ def main():
                         game.place_marble(r, c)
                         if game.game_state == 'PLAYING':
                             game.start_quadrant_rotation_animation(quad_idx, direction)
+            if not just_finished_anim and game_mode == "PVMCTS" and game.current_player == PLAYER_2 and game.game_phase != "ANIMATING_ROTATION":
+                pygame.time.wait(10)
+                if game.game_phase == "PLACEMENT":
+                    # Call the MCTS bot
+                    start_think = time.time()
+                    best_move = mcts_bot.find_best_move(game)
+                    think_time = time.time() - start_think
+                    print(f"[AI] Completed analysis in {think_time:.2f}s")
+
+                    if best_move:
+                        r, c, quad_idx, direction = best_move
+                        game.place_marble(r, c)
+                        print(f"[AI] Placed marble at ({r}, {c})")
+                        if game.game_state == 'PLAYING':
+                            game.start_quadrant_rotation_animation(quad_idx, direction)
 
         # ----- Draw -----
         if game.game_state == 'START_MENU':
@@ -134,15 +162,19 @@ def main():
             pva_button_text = button_font.render("Joueur vs IA", True, (255, 255, 255))
             screen.blit(pva_button_text, pva_button_text.get_rect(center=start_pva_button_rect.center))
 
+            pygame.draw.rect(screen, (180, 70, 130), start_pvmcts_button_rect, border_radius=15)
+            pvmcts_button_text = button_font.render("Joueur vs MCTS", True, (255, 255, 255))
+            screen.blit(pvmcts_button_text, pvmcts_button_text.get_rect(center=start_pvmcts_button_rect.center))
+
             pygame.draw.rect(screen, (70, 130, 180), start_aiai_button_rect, border_radius=15)
             aiai_button_text = button_font.render("IA vs IA", True, (255, 255, 255))
             screen.blit(aiai_button_text, aiai_button_text.get_rect(center=start_aiai_button_rect.center))
 
         elif game.game_state == 'PLAYING':
-            draw_game_board(screen, game, timing_stats=get_timing_stats())
+            draw_game_board(screen, game)
 
         elif game.game_state == 'GAME_OVER':
-            draw_game_board(screen, game, timing_stats=get_timing_stats())
+            draw_game_board(screen, game)
             # Overlay + message
             msg = "Le joueur BLANC gagne !" if game.winner == PLAYER_1 else \
                   "Le joueur NOIR gagne !" if game.winner == PLAYER_2 else "Partie Nulle !"
@@ -163,4 +195,9 @@ def main():
         clock.tick(60)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"[Error] Unhandled exception: {e}")
+        pygame.quit()
+        raise  # Re-raise the exception for debugging
