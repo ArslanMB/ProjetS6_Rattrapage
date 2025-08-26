@@ -115,6 +115,7 @@ def get_legal_moves(board):
     moves = []
     QS = QUADRANT_SIZE
     for (r, c) in empties:
+        _time_check()
         r = int(r); c = int(c)
         if use_local and (r, c) not in local:
             continue
@@ -140,6 +141,7 @@ def _winning_moves_fast(board, player, first_only=False):
     wins = []
     empties = np.argwhere(board == 0)
     for (r, c) in empties:
+        _time_check()
         r = int(r); c = int(c)
         for q in range(4):
             for d in (1, -1):
@@ -158,6 +160,7 @@ def _order_moves(board, moves, player, ply):
 
     ordered = []
     for (r, c, q, d) in moves:
+        _time_check()
         mv = (r, c, q, d)
         nb = apply_move_cached(board, mv, player)
 
@@ -522,13 +525,15 @@ def find_best_move_minimax(game_instance, depth=2, time_budget=20,BOOKING=True):
 
 # Temps
 SEARCH_TIMES = []
+SEARCH_NODES = []
 _LONGEST = [0.0, None]
 
 def reset_timing():
-    SEARCH_TIMES.clear(); _LONGEST[0]=0.0; _LONGEST[1]=None
+    SEARCH_TIMES.clear(); SEARCH_NODES.clear(); _LONGEST[0]=0.0; _LONGEST[1]=None
 
-def record_search_time(sec: float):
+def record_search_time(sec: float, nodes: int):
     SEARCH_TIMES.append(float(sec))
+    SEARCH_NODES.append(int(nodes))
     i = len(SEARCH_TIMES)
     if sec > _LONGEST[0]:
         _LONGEST[0], _LONGEST[1] = float(sec), i
@@ -537,15 +542,18 @@ def get_timing_stats():
     n = len(SEARCH_TIMES)
     avg = (sum(SEARCH_TIMES) / n) if n else 0.0
     last = SEARCH_TIMES[-1] if n else 0.0
-    return {"moves": n, "avg": avg, "last": last, "longest": _LONGEST[0], "longest_move_index": _LONGEST[1]}
+    avg_nodes = (sum(SEARCH_NODES) / n) if n else 0.0
+    last_nodes = SEARCH_NODES[-1] if n else 0
+    return {"moves": n, "avg": avg, "last": last, "avg_nodes": avg_nodes, "last_nodes": last_nodes, "longest": _LONGEST[0], "longest_move_index": _LONGEST[1]}
 
 def print_timing_summary(prefix="[IA]"):
     s = get_timing_stats()
-    print(f"{prefix} Coups:{s['moves']} | Moy:{s['avg']:.3f}s | Dernier:{s['last']:.3f}s | Max:{s['longest']:.3f}s (#{s['longest_move_index']})", flush=True)
+    print(f"{prefix} Coups:{s['moves']} | Moy:{s['avg']:.3f}s ({s['avg_nodes']:.0f} noeuds) | Dernier:{s['last']:.3f}s ({s['last_nodes']} noeuds) | Max:{s['longest']:.3f}s (#{s['longest_move_index']})", flush=True)
 
 def timed_find_best_move_minimax(game_instance, depth=2, time_budget=2.5,BOOKING=True):
     t0 = time.perf_counter()
     mv = find_best_move_minimax(game_instance, depth=depth, time_budget=time_budget, BOOKING=BOOKING)
     dt = time.perf_counter() - t0
-    record_search_time(dt)
-    return mv, dt
+    nodes = NODES[0]
+    record_search_time(dt, nodes)
+    return mv, dt, nodes

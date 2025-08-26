@@ -34,7 +34,7 @@ class MinimaxAgent(AgentBase):
         self.time_budget = float(time_budget)
         self.name = label or f"Minimax_d{depth}_tb{self.time_budget:g}s"
     def choose_move(self, game: PentagoGame):
-        mv, dt = timed_find_best_move_minimax(game, depth=self.depth, time_budget=self.time_budget, BOOKING=self.BOOKING)
+        mv, dt, _nodes = timed_find_best_move_minimax(game, depth=self.depth, time_budget=self.time_budget, BOOKING=self.BOOKING)
         return mv, dt
 
 class MCTSAgent(AgentBase):
