@@ -38,9 +38,6 @@ def _board_is_empty(board: np.ndarray) -> bool:
     return np.count_nonzero(board) == 0
 
 def _find_single_opponent_stone(board: np.ndarray, me: int) -> Optional[Tuple[int,int]]:
-    """Renvoie (r,c) d’une unique pierre adverse si et seulement si le plateau contient
-    exactement 1 pierre adverse et 1 pierre à moi (cas typique après deux plies).
-    Retourne None sinon."""
     # Après ton 1er coup, l’adversaire joue: on attend 1 pierre à toi et 1 à lui.
     if np.count_nonzero(board == me) != 1:
         return None

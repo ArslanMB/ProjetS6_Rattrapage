@@ -1,14 +1,11 @@
-# main.py
 import sys
 import pygame
 import time
 
-from core.pentago_logic import PentagoGame   # garde tes chemins actuels
+from core.pentago_logic import PentagoGame 
 from core.constants import PLAYER_1, PLAYER_2, BOARD_ROWS, BOARD_COLS, QUADRANT_SIZE
-from optimized_mcts import OptimizedMCTS
-#from alphabeta_ia.alpha_beta import (
-#    timed_find_best_move_minimax, reset_timing, get_timing_stats
-#)
+from mtcs_ia.optimized_mcts import OptimizedMCTS
+from alphabeta_ia.alpha_beta import (timed_find_best_move_minimax, reset_timing, get_timing_stats)
 
 # -- UI --
 from gui.draw import (
@@ -125,7 +122,7 @@ def main():
             if not just_finished_anim and game_mode == "PVA" and game.current_player == PLAYER_2 and game.game_phase != "ANIMATING_ROTATION":
                 pygame.time.wait(10)
                 if game.game_phase == "PLACEMENT":
-                    best_move, _dt = timed_find_best_move_minimax(game, depth=3)
+                    best_move, _dt = timed_find_best_move_minimax(game, depth=4)
                     if best_move:
                         r, c, quad_idx, direction = best_move
                         game.place_marble(r, c)
@@ -200,4 +197,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"[Error] Unhandled exception: {e}")
         pygame.quit()
-        raise  # Re-raise the exception for debugging
+        raise 
