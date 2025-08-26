@@ -104,7 +104,7 @@ def summarize_times(ts: List[float]) -> Dict[str, float]:
     p95 = s[min(n-1, max(0, int(math.ceil(0.95*n))-1))]
     return {"avg": sum(s)/n, "med": med, "p95": p95, "max": s[-1]}
 
-def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42):
+def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42, record_file: str = "records.txt"):
     random.seed(seed); np.random.seed(seed)
     wins1 = wins2 = draws = 0
     all_p1, all_p2 = [], []
@@ -120,10 +120,19 @@ def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int 
 
     p1s, p2s = summarize_times(all_p1), summarize_times(all_p2)
 
-    print(f"\n=== Série {agent1.name}  vs  {agent2.name}  (N={games}) ===")
-    print(f"{agent1.name:>24}: {wins1:3d} victoires | t(avg/med/p95/max)={p1s['avg']:.3f}/{p1s['med']:.3f}/{p1s['p95']:.3f}/{p1s['max']:.3f}s")
-    print(f"{agent2.name:>24}: {wins2:3d} victoires | t(avg/med/p95/max)={p2s['avg']:.3f}/{p2s['med']:.3f}/{p2s['p95']:.3f}/{p2s['max']:.3f}s")
-    print(f"{'Nuls':>24}: {draws:3d}  ({(draws/games):.1%})")
+    # Texte à écrire
+    result_text = (
+        f"\n=== Série {agent1.name}  vs  {agent2.name}  (N={games}) ===\n"
+        f"{agent1.name:>24}: {wins1:3d} victoires | t(avg/med/p95/max)={p1s['avg']:.3f}/{p1s['med']:.3f}/{p1s['p95']:.3f}/{p1s['max']:.3f}s\n"
+        f"{agent2.name:>24}: {wins2:3d} victoires | t(avg/med/p95/max)={p2s['avg']:.3f}/{p2s['med']:.3f}/{p2s['p95']:.3f}/{p2s['max']:.3f}s\n"
+        f"{'Nuls':>24}: {draws:3d}  ({(draws/games):.1%})\n"
+    )
+
+    print(result_text)
+
+    # Ajout dans le fichier
+    with open(record_file, "a", encoding="utf-8") as f:
+        f.write(result_text)
 
     return {
         "wins": {agent1.name: wins1, agent2.name: wins2, "draws": draws},
@@ -136,7 +145,7 @@ if __name__ == "__main__":
     
     a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d1_10s_BOOK", BOOKING=True)
     a2 = MinimaxAgent(depth=1,   time_budget=10, label="MM_d1_10s", BOOKING=False)
-    run_series(a1, a2, games=50, seed=2003)
+    run_series(a1, a2, games=2, seed=2003)
 
    
     a3 = MinimaxAgent(depth=1, time_budget=2.5, label="MM_A_2.5s")
