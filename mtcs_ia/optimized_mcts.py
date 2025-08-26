@@ -3,7 +3,6 @@ import random
 import time
 import math
 from collections import defaultdict
-
 from core.pentago_logic import PentagoGame
 from core.constants import PLAYER_1, PLAYER_2, BOARD_ROWS, BOARD_COLS, QUADRANT_SIZE
 

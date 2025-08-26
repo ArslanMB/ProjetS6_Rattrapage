@@ -1,5 +1,10 @@
 
-=== Série MM_d1_10s_BOOK  vs  MM_d1_10s  (N=2) ===
-          MM_d1_10s_BOOK:   0 victoires | t(avg/med/p95/max)=0.129/0.030/1.132/1.132s
-               MM_d1_10s:   2 victoires | t(avg/med/p95/max)=1.429/0.038/10.002/10.002s
+=== Série MM_d1_10s_BOOK  vs  MM_d1_10s  (N=1) ===
+          MM_d1_10s_BOOK:   0 victoires | t(avg/med/p95/max)=0.207/0.030/1.090/1.090s
+               MM_d1_10s:   1 victoires | t(avg/med/p95/max)=1.709/0.053/10.006/10.006s
+                    Nuls:   0  (0.0%)
+
+=== Série MM_d1_10s_BOOK  vs  MM_d1_10s  (N=1) ===
+          MM_d1_10s_BOOK:   0 victoires | t(avg/med/p95/max)=0.204/0.029/1.073/1.073s
+               MM_d1_10s:   1 victoires | t(avg/med/p95/max)=1.710/0.053/10.002/10.002s
                     Nuls:   0  (0.0%)
