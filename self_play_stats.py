@@ -1,133 +1,149 @@
+import time
+import math
+import random
+from dataclasses import dataclass
+from typing import List, Tuple, Optional, Any, Dict
 import numpy as np
-from collections import defaultdict
 from core.pentago_logic import PentagoGame
-from core.constants import PLAYER_1, PLAYER_2, QUADRANT_SIZE, BOARD_ROWS, BOARD_COLS, ROTATION_SPEED
-from alphabeta_ia.alpha_beta import timed_find_best_move_minimax  # ton bot retourne (move, dt)
+from core.constants import PLAYER_1, PLAYER_2
+from alphabeta_ia.alpha_beta import (
+    timed_find_best_move_minimax,  
+    apply_move_cached,            
+    check_win_cached,             
+    get_legal_moves              
+)
+from mtcs_ia.optimized_mcts import OptimizedMCTS
 
 
+# Agents unifiés
 
-# --- Depth adaptative locale (sans dépendre du bot) ---
-def pick_adaptive_depth(board, base=2, hard_cap=5):
-    empties = int(np.count_nonzero(board == 0))
-    d = base
-    if empties <= 24: d = max(d, 3)
-    if empties <= 16: d = max(d, 4)
-    if empties <= 10: d = max(d, 5)
-    return min(d, hard_cap)
+class AgentBase:
+    name: str
+    def choose_move(self, game: PentagoGame) -> Tuple[Optional[Tuple[int,int,int,int]], float]:
+        raise NotImplementedError
+    def on_game_start(self): pass
 
-def _resolve_depth(mode, board):
-    if isinstance(mode, str) and mode.upper() == "A":
-        return pick_adaptive_depth(board, base=2, hard_cap=5)
-    return int(mode)
+class MinimaxAgent(AgentBase):
+    def __init__(self, depth: Any = "A", time_budget: float = 2.5, label: Optional[str] = None, BOOKING: bool = True):
+        self.BOOKING = BOOKING
+        self.depth = depth
+        self.time_budget = float(time_budget)
+        self.name = label or f"Minimax_d{depth}_tb{self.time_budget:g}s"
+    def choose_move(self, game: PentagoGame):
+        mv, dt = timed_find_best_move_minimax(game, depth=self.depth, time_budget=self.time_budget, BOOKING=self.BOOKING)
+        return mv, dt
 
-# helpers
-def _apply_move_headless(board, move, player):
-    r, c, q, d = move
-    b1 = PentagoGame.get_board_after_placement(board, r, c, player)
-    if PentagoGame.check_win_on_board(b1) == player:
-        return b1
-    return PentagoGame.get_board_after_rotation(b1, q, d)
+class MCTSAgent(AgentBase):
+    def __init__(self, time_limit: float = 2.5, exploration_constant: float = 1.41, label: Optional[str] = None):
+        self.bot = OptimizedMCTS(time_limit=float(time_limit), exploration_constant=float(exploration_constant))
+        self.name = label or f"MCTS_t{time_limit:g}s_C{exploration_constant:g}"
+    def choose_move(self, game: PentagoGame):
+        t0 = time.perf_counter()
+        mv = self.bot.find_best_move(game)
+        dt = time.perf_counter() - t0
+        return mv, dt
 
-class _State:
-    __slots__ = ("board", "current_player")
-    def __init__(self, board, current_player):
-        self.board = board
-        self.current_player = current_player
 
-def play_one_game(ai1_depth=2, ai2_depth=2, starter=PLAYER_1):
-    board = np.zeros((BOARD_ROWS, BOARD_COLS), dtype=int)
-    cur = starter
-    map_player_to_ai = {starter: "AI1", -starter: "AI2"}
-    times = {"AI1": [], "AI2": []}
-    plies = 0
-    winner = 0
+# ---- Boucle d'une partie pour 1 paire ----
 
-    while True:
-        plies += 1
-        which = map_player_to_ai[cur]
-        depth_mode = ai1_depth if which == "AI1" else ai2_depth
-        depth_used = _resolve_depth(depth_mode, board)
+@dataclass
+class GameResult:
+    winner: int                 # 1, -1, 0 (nul)
+    plies: int
+    p1_times: List[float]
+    p2_times: List[float]
 
-        state = _State(board, cur)
-        mv, dt = timed_find_best_move_minimax(state, depth=depth_used)
-        if mv is None:
-            winner = 2
-            break
-        times[which].append(dt)
+def _apply_move(game: PentagoGame, mv: Tuple[int,int,int,int]):
+    player = game.current_player
+    game.board = apply_move_cached(game.board, mv, player)
+    game.current_player = -player
 
-        board = _apply_move_headless(board, mv, cur)
-        w = PentagoGame.check_win_on_board(board)
+def play_one_game(agent1: AgentBase, agent2: AgentBase, starter: int) -> GameResult:
+    game = PentagoGame()
+    game.current_player = starter
+    agent1.on_game_start()
+    agent2.on_game_start()
+
+    p1_times, p2_times = [], []
+
+    for ply in range(200):
+        print(ply)
+        # terminal avant coup
+        w = check_win_cached(game.board)
         if w != 0:
-            winner = w if w in (PLAYER_1, PLAYER_2) else 2
-            break
+            return GameResult(winner=0 if w == 2 else w, plies=ply, p1_times=p1_times, p2_times=p2_times)
+        if not np.any(game.board == 0):
+            return GameResult(winner=0, plies=ply, p1_times=p1_times, p2_times=p2_times)
 
-        cur = -cur
+        agent = agent1 if game.current_player == PLAYER_1 else agent2
+        mv, dt = agent.choose_move(game)
 
-    if winner == PLAYER_1:
-        winner_ai = map_player_to_ai[PLAYER_1]
-    elif winner == PLAYER_2:
-        winner_ai = map_player_to_ai[PLAYER_2]
-    else:
-        winner_ai = "DRAW"
+        if mv is None:
+            legal = get_legal_moves(game.board)
+            if not legal:
+                return GameResult(winner=0, plies=ply, p1_times=p1_times, p2_times=p2_times)
+            mv = legal[0]
+        
+        _apply_move(game, mv)
 
-    return {
-        "winner_ai": winner_ai,
-        "plies": plies,
-        "t_ai1": times["AI1"],
-        "t_ai2": times["AI2"],
-    }
+        if agent is agent1: p1_times.append(float(dt))
+        else:               p2_times.append(float(dt))
 
-def run_selfplay(n_games=20, ai1_depth=2, ai2_depth=2):
-    stats = defaultdict(int)
-    all_plies = []
-    t_ai1_all, t_ai2_all = [], []
-    long_ai1 = 0.0
-    long_ai2 = 0.0
+        w = check_win_cached(game.board)
+        if w != 0:
+            return GameResult(winner=0 if w == 2 else w, plies=ply+1, p1_times=p1_times, p2_times=p2_times)
 
-    for g in range(n_games):
-        starter = PLAYER_1 if (g % 2 == 0) else PLAYER_2
-        res = play_one_game(ai1_depth, ai2_depth, starter=starter)
-        winner_ai = res["winner_ai"]
-        stats[winner_ai] += 1
-        all_plies.append(res["plies"])
+    return GameResult(winner=0, plies=200, p1_times=p1_times, p2_times=p2_times)
 
-        t_ai1_all.extend(res["t_ai1"])
-        t_ai2_all.extend(res["t_ai2"])
-        if res["t_ai1"]:
-            long_ai1 = max(long_ai1, max(res["t_ai1"]))
-        if res["t_ai2"]:
-            long_ai2 = max(long_ai2, max(res["t_ai2"]))
+# ---- Statistiques de temps ----
 
-        print(f"[G{g+1}/{n_games}] starter={'AI1' if starter==PLAYER_1 else 'AI2'} | winner={winner_ai} | plies={res['plies']}")
+def summarize_times(ts: List[float]) -> Dict[str, float]:
+    if not ts: return {"avg": 0.0, "med": 0.0, "p95": 0.0, "max": 0.0}
+    s = sorted(ts); n = len(s)
+    med = s[n//2] if n % 2 else 0.5*(s[n//2 - 1] + s[n//2])
+    p95 = s[min(n-1, max(0, int(math.ceil(0.95*n))-1))]
+    return {"avg": sum(s)/n, "med": med, "p95": p95, "max": s[-1]}
 
-    def _avg(lst): return (sum(lst)/len(lst)) if lst else 0.0
+def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42):
+    random.seed(seed); np.random.seed(seed)
+    wins1 = wins2 = draws = 0
+    all_p1, all_p2 = [], []
 
-    ai1_w = stats["AI1"]
-    ai2_w = stats["AI2"]
-    draws = stats["DRAW"]
-    print("\n===== RÉSUMÉ =====")
-    label1 = f"A (adaptative)" if (isinstance(ai1_depth,str) and ai1_depth.upper()=="A") else str(ai1_depth)
-    label2 = f"A (adaptative)" if (isinstance(ai2_depth,str) and ai2_depth.upper()=="A") else str(ai2_depth)
-    print(f"Parties: {n_games}")
-    print(f"AI1 (depth={label1})  victoires: {ai1_w}")
-    print(f"AI2 (depth={label2})  victoires: {ai2_w}")
-    print(f"Nulles: {draws}")
-    print(f"Winrate AI1: { (ai1_w / n_games * 100):.1f}% | Winrate AI2: { (ai2_w / n_games * 100):.1f}%")
-    print(f"Plies moyens: {_avg(all_plies):.1f}")
-    print(f"Temps moyen/coup AI1: {_avg(t_ai1_all):.3f}s | plus long: {long_ai1:.3f}s")
-    print(f"Temps moyen/coup AI2: {_avg(t_ai2_all):.3f}s | plus long: {long_ai2:.3f}s")
+    for i in range(games):
+        starter = PLAYER_1 if (i % 2 == 0) else PLAYER_2
+        res = play_one_game(agent1, agent2, starter)
+        if res.winner == PLAYER_1: wins1 += 1
+        elif res.winner == PLAYER_2: wins2 += 1
+        else: draws += 1
+        all_p1 += res.p1_times
+        all_p2 += res.p2_times
+
+    p1s, p2s = summarize_times(all_p1), summarize_times(all_p2)
+
+    print(f"\n=== Série {agent1.name}  vs  {agent2.name}  (N={games}) ===")
+    print(f"{agent1.name:>24}: {wins1:3d} victoires | t(avg/med/p95/max)={p1s['avg']:.3f}/{p1s['med']:.3f}/{p1s['p95']:.3f}/{p1s['max']:.3f}s")
+    print(f"{agent2.name:>24}: {wins2:3d} victoires | t(avg/med/p95/max)={p2s['avg']:.3f}/{p2s['med']:.3f}/{p2s['p95']:.3f}/{p2s['max']:.3f}s")
+    print(f"{'Nuls':>24}: {draws:3d}  ({(draws/games):.1%})")
 
     return {
-        "games": n_games,
-        "ai1_wins": ai1_w,
-        "ai2_wins": ai2_w,
-        "draws": draws,
-        "avg_plies": _avg(all_plies),
-        "ai1_avg_t": _avg(t_ai1_all),
-        "ai2_avg_t": _avg(t_ai2_all),
-        "ai1_max_t": long_ai1,
-        "ai2_max_t": long_ai2,
+        "wins": {agent1.name: wins1, agent2.name: wins2, "draws": draws},
+        "p1_times": p1s,
+        "p2_times": p2s
     }
+
 
 if __name__ == "__main__":
-    run_selfplay(n_games=2, ai1_depth="A", ai2_depth=2)
+    
+    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d1_10s_BOOK", BOOKING=True)
+    a2 = MinimaxAgent(depth=1,   time_budget=10, label="MM_d1_10s", BOOKING=False)
+    run_series(a1, a2, games=50, seed=2003)
+
+   
+    a3 = MinimaxAgent(depth=1, time_budget=2.5, label="MM_A_2.5s")
+    a4 = MCTSAgent(time_limit=2.5, exploration_constant=1.41, label="MCTS_2.5s")
+    #run_series(a3, a4, games=150, seed=2003)
+
+    # Ex 3) MCTS 1s vs MCTS 2.5s
+    # b1 = MCTSAgent(time_limit=1.0, label="MCTS_1s")
+    # b2 = MCTSAgent(time_limit=2.5, label="MCTS_2.5s")
+    # run_series(b1, b2, games=30)
