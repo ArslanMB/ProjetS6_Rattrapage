@@ -108,53 +108,74 @@ def summarize_times(ts: List[float]) -> Dict[str, float]:
     p95 = s[min(n-1, max(0, int(math.ceil(0.95*n))-1))]
     return {"avg": sum(s)/n, "med": med, "p95": p95, "max": s[-1]}
 
-def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42, record_file = os.path.join(os.path.dirname(__file__), "records.txt")):
+def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42,
+               record_file = os.path.join(os.path.dirname(__file__), "records.txt")):
+    # nécessite: import os, random
     random.seed(seed); np.random.seed(seed)
-    wins1 = wins2 = draws = 0
-    all_p1, all_p2 = [], []
+
+    wins = {agent1.name: 0, agent2.name: 0}
+    draws = 0
+    times = {agent1.name: [], agent2.name: []}
 
     for i in range(games):
-        starter = PLAYER_1 if (i % 2 == 0) else PLAYER_2
-        res = play_one_game(agent1, agent2, starter)
-        if res.winner == PLAYER_1: wins1 += 1
-        elif res.winner == PLAYER_2: wins2 += 1
-        else: draws += 1
-        all_p1 += res.p1_times
-        all_p2 += res.p2_times
+        # ➜ alterne la personne qui commence: on swap les côtés
+        # PLAYER_1 commence toujours, donc l’agent en position p1 commence.
+        if i % 2 == 0:
+            p1, p2 = agent1, agent2
+        else:
+            p1, p2 = agent2, agent1
 
-    p1s, p2s = summarize_times(all_p1), summarize_times(all_p2)
+        res = play_one_game(p1, p2, starter=PLAYER_1)  # p1 commence
+
+        # Comptabilise la victoire du bon agent
+        if res.winner == PLAYER_1:
+            wins[p1.name] += 1
+        elif res.winner == PLAYER_2:
+            wins[p2.name] += 1
+        else:
+            draws += 1
+
+        # Agrège les temps du bon agent, même s’il change de côté
+        times[p1.name] += res.p1_times
+        times[p2.name] += res.p2_times
+
+    # Résumés de temps par agent (pas par côté)
+    p1s = summarize_times(times[agent1.name])
+    p2s = summarize_times(times[agent2.name])
 
     result_text = (
         f"\n=== Série {agent1.name}  vs  {agent2.name}  (N={games}) ===\n"
-        f"{agent1.name:>24}: {wins1:3d} victoires | t(avg/med/p95/max)={p1s['avg']:.3f}/{p1s['med']:.3f}/{p1s['p95']:.3f}/{p1s['max']:.3f}s\n"
-        f"{agent2.name:>24}: {wins2:3d} victoires | t(avg/med/p95/max)={p2s['avg']:.3f}/{p2s['med']:.3f}/{p2s['p95']:.3f}/{p2s['max']:.3f}s\n"
+        f"{agent1.name:>24}: {wins[agent1.name]:3d} victoires | "
+        f"t(avg/med/p95/max)={p1s['avg']:.3f}/{p1s['med']:.3f}/{p1s['p95']:.3f}/{p1s['max']:.3f}s\n"
+        f"{agent2.name:>24}: {wins[agent2.name]:3d} victoires | "
+        f"t(avg/med/p95/max)={p2s['avg']:.3f}/{p2s['med']:.3f}/{p2s['p95']:.3f}/{p2s['max']:.3f}s\n"
         f"{'Nuls':>24}: {draws:3d}  ({(draws/games):.1%})\n"
     )
 
     print(result_text)
-
     with open(record_file, "a", encoding="utf-8") as f:
         f.write(result_text)
 
     return {
-        "wins": {agent1.name: wins1, agent2.name: wins2, "draws": draws},
-        "p1_times": p1s,
-        "p2_times": p2s
+        "wins": {agent1.name: wins[agent1.name], agent2.name: wins[agent2.name], "draws": draws},
+        agent1.name + "_times": p1s,
+        agent2.name + "_times": p2s
     }
+
 
 
 if __name__ == "__main__":
     
-    a1 = MinimaxAgent(depth=3, time_budget=10, label="MM_d1_10s_BOOK", BOOKING=False)
-    a2 = MinimaxAgent(depth=2,   time_budget=10, label="MM_d1_10s", BOOKING=False)
-    run_series(a2, a1, games=1, seed=1992)
+    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d1_10s", BOOKING=False)
+    a2 = MinimaxAgent(depth=3,   time_budget=10, label="MM_d2_10s", BOOKING=False)
+    run_series(a1, a2, games=100, seed=1222)
 
    
-    a3 = MinimaxAgent(depth=1, time_budget=2.5, label="MM_A_2.5s")
-    a4 = MCTSAgent(time_limit=2.5, exploration_constant=1.41, label="MCTS_2.5s")
-    #run_series(a4, a3, games=2, seed=2003)
+    a3 = MinimaxAgent(depth="A", time_budget=10, label="MM_A_10sBOOK", BOOKING=True)
+    a4 = MinimaxAgent(depth="A", time_budget=10, label="MM_d3_10s", BOOKING=False)
+    #run_series(a4, a3, games=50, seed=2013)
 
     # Ex 3) MCTS 1s vs MCTS 2.5s
-    # b1 = MCTSAgent(time_limit=1.0, label="MCTS_1s")
-    # b2 = MCTSAgent(time_limit=2.5, label="MCTS_2.5s")
-    # run_series(b1, b2, games=30)
+    b1 = MCTSAgent(time_limit=5, label="MCTS_1s")
+    a4 = MinimaxAgent(depth=1, time_budget=10, label="MM_d3_10s", BOOKING=False)
+    #run_series(b1, b2, games=100, seed=2024)
