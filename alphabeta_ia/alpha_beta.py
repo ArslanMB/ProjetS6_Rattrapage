@@ -418,13 +418,13 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
                 block_now = 1
             is_quiet = (win_now == 0 and block_now == 0)
 
-            # Futility miroir (safe)
+            # Futility miroir 
             if (static_eval is not None and depth == FUT_DEPTH and i >= 6
                 and is_quiet and not opp_wins_before and ply >= 2):
                 if static_eval - FUT_MARGIN >= beta:
                     continue
 
-            # LMR miroir (safe)
+            # LMR miroir 
             reduced = (depth >= 3 and i >= 12 and is_quiet and not opp_wins_before and ply >= 2)
             child_depth = depth - 1 - (1 if reduced else 0)
 
@@ -470,7 +470,7 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
 
 
 
-# === ITERATIVE DEEPENING + ASP ====
+# === ITERATIVE DEEP + ASP ====
 def find_best_move_iterative(game_instance, max_depth=4, time_budget=2.5):
     board = np.copy(game_instance.board)
     root_player = game_instance.current_player
@@ -581,5 +581,5 @@ def timed_find_best_move_minimax(game_instance, depth=2, time_budget=2.5, BOOKIN
     NODES_TACTIC[0] = 0
     mv = find_best_move_minimax(game_instance, depth=depth, time_budget=time_budget, BOOKING=BOOKING)
     dt = time.perf_counter() - t0
-    print(f"[ALPHABETA] Coup: {mv} | AB nodes: {NODES_AB[0]} |Probes: {NODES_TACTIC[0]} | Temps: {dt:.3f}s")
+    print(f"[ALPHABETA] Coup: {mv} | AB nodes: {NODES_AB[0]} | Probes: {NODES_TACTIC[0]} | Temps: {dt:.3f}s")
     return mv, dt
