@@ -145,14 +145,14 @@ def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int 
 
 if __name__ == "__main__":
     
-    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d1_10s_BOOK", BOOKING=True)
-    a2 = MinimaxAgent(depth=1,   time_budget=10, label="MM_d1_10s", BOOKING=False)
-    run_series(a1, a2, games=1, seed=2003)
+    a1 = MinimaxAgent(depth=3, time_budget=10, label="MM_d1_10s_BOOK", BOOKING=False)
+    a2 = MinimaxAgent(depth=2,   time_budget=10, label="MM_d1_10s", BOOKING=False)
+    run_series(a2, a1, games=1, seed=1992)
 
    
     a3 = MinimaxAgent(depth=1, time_budget=2.5, label="MM_A_2.5s")
     a4 = MCTSAgent(time_limit=2.5, exploration_constant=1.41, label="MCTS_2.5s")
-    #run_series(a3, a4, games=150, seed=2003)
+    #run_series(a4, a3, games=2, seed=2003)
 
     # Ex 3) MCTS 1s vs MCTS 2.5s
     # b1 = MCTSAgent(time_limit=1.0, label="MCTS_1s")

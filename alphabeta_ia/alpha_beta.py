@@ -78,6 +78,14 @@ KILLER1 = [None]*MAX_PLY
 KILLER2 = [None]*MAX_PLY
 HISTORY = defaultdict(int)
 
+NODES_AB = [0]      # nœuds alpha-beta réellement visités
+NODES_TACTIC = [0]  # nœuds visités dans les tactiques 
+def _count_ab_node():
+    NODES_AB[0] += 1
+
+def _count_tactic_probe():
+    NODES_TACTIC[0] += 1
+
 # Time control 
 class _TimeUp(Exception): pass
 TIME_DEADLINE = [None]
@@ -99,47 +107,28 @@ def get_legal_moves(board):
         pass
 
     empties = np.argwhere(board == 0)
-    stones  = np.argwhere(board != 0)
-
-    use_local = len(stones) > 4
-    local = set()
-    if use_local and len(stones) > 0:
-        R, C = board.shape
-        for (sr, sc) in stones:
-            for dr in (-1,0,1):
-                for dc in (-1,0,1):
-                    rr, cc = int(sr+dr), int(sc+dc)
-                    if 0 <= rr < R and 0 <= cc < C and board[rr, cc] == 0:
-                        local.add((rr, cc))
-
     moves = []
-    QS = QUADRANT_SIZE
     for (r, c) in empties:
         r = int(r); c = int(c)
-        if use_local and (r, c) not in local:
-            continue
         for q in range(4):
-            qr = (q // 2) * QS
-            qc = (q %  2) * QS
-            plays_inside = (qr <= r < qr+QS) and (qc <= c < qc+QS)
-            quad = board[qr:qr+QS, qc:qc+QS]
-            quad_empty = (np.count_nonzero(quad) == 0)
-            if quad_empty and not plays_inside:
-                moves.append((r, c, q, 1))      # une seule direction
-            else:
-                moves.append((r, c, q, 1))
-                moves.append((r, c, q, -1))
+            # TOUJOURS proposer les deux sens de rotation
+            moves.append((r, c, q, 1))
+            moves.append((r, c, q, -1))
 
     _MOVE_CACHE[k] = moves
     if len(_MOVE_CACHE) > MOVE_CACHE_MAX:
         _MOVE_CACHE.popitem(last=False)
     return moves
 
+
 #  ORDO / WINS 
-def _winning_moves_fast(board, player, first_only=False):
+def _winning_moves_fast(board, player, first_only=False, check_time=True):
     wins = []
     empties = np.argwhere(board == 0)
     for (r, c) in empties:
+        if check_time:
+            _time_check()
+            _count_tactic_probe()
         r = int(r); c = int(c)
         for q in range(4):
             for d in (1, -1):
@@ -289,17 +278,16 @@ FUT_DEPTH  = 2
 FUT_MARGIN = 300.0
 
 def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
+    _count_ab_node()
     _time_check()
     key = _tt_key(board, maximizing, root_player, depth)
 
-    # Feuille / terminal
     winner = check_win_cached(board)
     if depth == 0 or winner != 0 or np.all(board != 0):
         val = evaluate(board, root_player)
         TT[key] = (depth, val, 'EXACT', None)
         return val, None
 
-    # Transposition table (cutoff éventuel)
     entry = TT.get(key)
     if entry is not None:
         d_stored, v_stored, flag, mv_stored = entry
@@ -316,14 +304,12 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
     alpha0, beta0 = alpha, beta
     player_to_move = root_player if maximizing else -root_player
 
-    # Génération de coups
     moves = get_legal_moves(board)
     if not moves:
         val = evaluate(board, root_player)
         TT[key] = (depth, val, 'EXACT', None)
         return val, None
 
-    # Tactique immédiate : coup gagnant direct
     wins = _winning_moves_fast(board, player_to_move, first_only=True)
     if wins:
         best = wins[0]
@@ -331,70 +317,52 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
         TT[key] = (depth, val, 'EXACT', best)
         return val, best
 
-    # Ordonnancement (killer/history/etc.)
     moves = _order_moves(board, moves, player_to_move, ply)
 
-    # PV move d'une éventuelle TT
     pv_move = entry[3] if entry is not None else None
     if pv_move is not None and pv_move in moves:
         i = moves.index(pv_move)
         if i != 0:
             moves[0], moves[i] = moves[i], moves[0]
 
-    # Static eval (pour futility) si on est à faible profondeur restante
-    static_eval = None
-    if depth <= FUT_DEPTH:
-        static_eval = evaluate(board, root_player)
-
-    # Pré-calcul : l'adversaire avait-il une win en 1 avant de jouer ?
+    static_eval = evaluate(board, root_player) if depth == FUT_DEPTH else None
     opp_wins_before = _winning_moves_fast(board, -player_to_move, first_only=True)
-
-    best_move = None
 
     # --------- MAX -----------
     if maximizing:
         value = float('-inf')
-
         for i, mv in enumerate(moves):
             nb = apply_move_cached(board, mv, player_to_move)
 
-            # Flags tactiques (win immédiate / blocage de win adverse)
             win_now = 1 if check_win_cached(nb) == player_to_move else 0
             block_now = 0
             if opp_wins_before:
-                # si après NB l'adversaire n'a plus de win en 1, c'est un blocage
                 if not _winning_moves_fast(nb, -player_to_move, first_only=True):
                     block_now = 1
             is_quiet = (win_now == 0 and block_now == 0)
 
-            # Futility pruning (sur coups tardifs, non tactiques)
-            if static_eval is not None and i >= 6 and is_quiet:
+            if (static_eval is not None and depth == FUT_DEPTH
+                and i >= 6 and is_quiet and not opp_wins_before and ply >= 2):
                 if static_eval + FUT_MARGIN <= alpha:
                     continue
 
-            # Late Move Reductions (pas sur PV / pas sur tactiques)
-            reduced = (depth >= 3 and i >= 12 and is_quiet)
+            reduced = (depth >= 3 and i >= 12 and is_quiet and not opp_wins_before and ply >= 2)
             child_depth = depth - 1 - (1 if reduced else 0)
 
             if i == 0:
-                # PV search
                 score, _ = alphabeta(nb, depth - 1, alpha, beta, False, root_player, ply + 1)
             else:
-                # PVS: d'abord fenêtre nulle
                 score, _ = alphabeta(nb, child_depth, alpha, alpha + 1, False, root_player, ply + 1)
-                # RechercHe à profondeur pleine si ça dépasse alpha
                 if score > alpha and child_depth < depth - 1:
                     score, _ = alphabeta(nb, depth - 1, alpha, alpha + 1, False, root_player, ply + 1)
                 if score > alpha and score < beta:
                     score, _ = alphabeta(nb, depth - 1, alpha, beta, False, root_player, ply + 1)
 
-            # Mise à jour alpha/best
             if score > value:
                 value, best_move = score, mv
             if value > alpha:
                 alpha = value
 
-            # Coupure beta + killers/history
             if alpha >= beta:
                 if mv != KILLER1[ply]:
                     KILLER2[ply] = KILLER1[ply]
@@ -402,17 +370,15 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
                 HISTORY[(player_to_move, mv)] += depth * depth
                 break
 
-        # Flag TT
         flag = 'EXACT'
         if value <= alpha0: flag = 'UPPER'
         elif value >= beta: flag = 'LOWER'
         TT[key] = (depth, value, flag, best_move)
         return value, best_move
 
-    # --------- MIN -----------
+    # --------- MIN (modifié) -----------
     else:
         value = float('inf')
-
         for i, mv in enumerate(moves):
             nb = apply_move_cached(board, mv, player_to_move)
 
@@ -423,20 +389,22 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
                     block_now = 1
             is_quiet = (win_now == 0 and block_now == 0)
 
-            # Futility pruning (miroir)
-            if static_eval is not None and i >= 6 and is_quiet:
+            if (static_eval is not None and depth == FUT_DEPTH
+                and i >= 6 and is_quiet and not opp_wins_before and ply >= 2):
                 if static_eval - FUT_MARGIN >= beta:
                     continue
 
-            # LMR (miroir)
-            reduced = (depth >= 3 and i >= 12 and is_quiet)
+            reduced = (depth >= 3 and i >= 12 and is_quiet and not opp_wins_before and ply >= 2)
             child_depth = depth - 1 - (1 if reduced else 0)
 
             if i == 0:
                 score, _ = alphabeta(nb, depth - 1, alpha, beta, True, root_player, ply + 1)
             else:
-                score, _ = alphabeta(nb, child_depth, alpha, beta, True, root_player, ply + 1)
+                # PVS côté MIN: fenêtre nulle (beta-1, beta)
+                score, _ = alphabeta(nb, child_depth, beta - 1, beta, True, root_player, ply + 1)
                 if score < beta and child_depth < depth - 1:
+                    score, _ = alphabeta(nb, depth - 1, beta - 1, beta, True, root_player, ply + 1)
+                if score > alpha and score < beta:
                     score, _ = alphabeta(nb, depth - 1, alpha, beta, True, root_player, ply + 1)
 
             if score < value:
@@ -452,10 +420,14 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
                 break
 
         flag = 'EXACT'
-        if value <= alpha:   flag = 'UPPER'
-        elif value >= beta0: flag = 'LOWER'
+        if value <= alpha0:
+            flag = 'UPPER'
+        elif value >= beta:
+            flag = 'LOWER'
         TT[key] = (depth, value, flag, best_move)
         return value, best_move
+
+
 
 
 # === ITERATIVE DEEPENING + ASP ====
@@ -489,10 +461,29 @@ def find_best_move_minimax(game_instance, depth=2, time_budget=20,BOOKING=True):
 
     board = np.copy(game_instance.board)
     player = game_instance.current_player
+
+    wins = _winning_moves_fast(board, player, first_only=True, check_time=False)
+    if wins:
+        return wins[0]
+    
     if BOOKING == True:
         mv_book = probe_opening_move(board, player)
         if mv_book is not None:
             return mv_book
+
+    opp = -player
+    opp_wins = _winning_moves_fast(board, opp, first_only=True, check_time=False)
+    if opp_wins:
+        legal = get_legal_moves(board)
+        # Ordonner avec ton heuristique existante
+        for mv in _order_moves(board, legal, player, ply=0):
+            nb = apply_move_cached(board, mv, player)
+            # Si on gagne tout de suite en bloquant, c'est parfait
+            if check_win_cached(nb) == player:
+                return mv
+            # Sinon, si l'adversaire n'a plus de win-in-1 après notre coup, on garde ce blocage
+            if not _winning_moves_fast(nb, opp, first_only=True, check_time=False):
+                return mv
 
     global A   
 
@@ -543,9 +534,12 @@ def print_timing_summary(prefix="[IA]"):
     s = get_timing_stats()
     print(f"{prefix} Coups:{s['moves']} | Moy:{s['avg']:.3f}s | Dernier:{s['last']:.3f}s | Max:{s['longest']:.3f}s (#{s['longest_move_index']})", flush=True)
 
-def timed_find_best_move_minimax(game_instance, depth=2, time_budget=2.5,BOOKING=True):
+def timed_find_best_move_minimax(game_instance, depth=2, time_budget=2.5, BOOKING=True):
     t0 = time.perf_counter()
+    NODES[0] = 0
+    NODES_AB[0] = 0
+    NODES_TACTIC[0] = 0
     mv = find_best_move_minimax(game_instance, depth=depth, time_budget=time_budget, BOOKING=BOOKING)
     dt = time.perf_counter() - t0
-    record_search_time(dt)
+    print(f"[ALPHABETA] Coup: {mv} | AB nodes: {NODES_AB[0]} | Tactic probes: {NODES_TACTIC[0]} | Temps: {dt:.3f}s")
     return mv, dt
