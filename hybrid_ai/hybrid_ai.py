@@ -13,8 +13,8 @@ Strategy:
 
 import time
 import numpy as np
-from optimized_mcts import OptimizedMCTS
-import alpha_beta as ab
+from mtcs_ia.optimized_mcts import OptimizedMCTS
+import alphabeta_ia.alpha_beta as ab
 
 
 class HybridAI:
