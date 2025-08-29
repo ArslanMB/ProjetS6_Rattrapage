@@ -122,7 +122,7 @@ def main():
             if not just_finished_anim and game_mode == "PVA" and game.current_player == PLAYER_2 and game.game_phase != "ANIMATING_ROTATION":
                 pygame.time.wait(10)
                 if game.game_phase == "PLACEMENT":
-                    best_move, _dt = timed_find_best_move_minimax(game, depth=2)
+                    best_move, _dt = timed_find_best_move_minimax(game, depth="A", time_budget=10, BOOKING=True)
                     if best_move:
                         r, c, quad_idx, direction = best_move
                         game.place_marble(r, c)

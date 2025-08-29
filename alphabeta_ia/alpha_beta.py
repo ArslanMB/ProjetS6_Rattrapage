@@ -67,7 +67,7 @@ def _eval_cache_put(k, v):
     if len(_EVAL_CACHE) > MAX_EVAL_CACHE:
         _EVAL_CACHE.popitem(last=False)
 
-# ================== TRANSPO / HEURISTIQUES ==================
+# ====== TRANSPO / HEURISTIQUES (TRI) =====
 TT = {}  # key -> (depth, value, flag, best_move)
 def _tt_key(board, maximizing, root_player, depth):
     b8 = board.astype(np.int8, copy=False)
@@ -178,7 +178,7 @@ def _order_moves(board, moves, player, ply):
     return [t[-1] for t in scored]
 
 
-# ================== ÉVALUATION (fenêtres pré-calculées) ==================
+# ======= ÉVALUATION (fenêtres pré-calculées) ======
 PRECOMP_WINDOWS = []
 for r in range(BOARD_ROWS):
     for c in range(BOARD_COLS - 4):
@@ -277,7 +277,7 @@ def pick_adaptive_depth(board, base=2, hard_cap=5):
 def get_adaptive_depth():
     return A
 
-# ================== ALPHABÊTA (PVS + LMR + killers/history + TT) ==================
+# ====== ALPHABÊTA (PVS + LMR + killers/history + TT) =======
 FUT_DEPTH  = 2
 FUT_MARGIN = 300.0
 
@@ -336,7 +336,7 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
         if i != 0:
             moves[0], moves[i] = moves[i], moves[0]
 
-    # Static eval uniquement à FUT_DEPTH (pour futility)
+    # Static eval uniquement à FUT_DEPTH 
     static_eval = evaluate(board, root_player) if depth == FUT_DEPTH else None
 
     # Menace adverse (désactive prunes agressives)
@@ -501,38 +501,35 @@ def find_best_move_minimax(game_instance, depth=2, time_budget=20,BOOKING=True):
 
     board = np.copy(game_instance.board)
     player = game_instance.current_player
-
+    # Win-in-1 immédiate
     wins = _winning_moves_fast(board, player, first_only=True, check_time=False)
     if wins:
         return wins[0]
-    
+    # Premier coup dans le livre d'ouvertures
     if BOOKING == True:
         mv_book = probe_opening_move(board, player)
         if mv_book is not None:
             return mv_book
-
+    # Bloquer win-in-1 adverse
     opp = -player
     opp_wins = _winning_moves_fast(board, opp, first_only=True, check_time=False)
     if opp_wins:
         legal = get_legal_moves(board)
-        # Ordonner avec ton heuristique existante
         for mv in _order_moves(board, legal, player, ply=0):
             nb = apply_move_cached(board, mv, player)
-            # Si on gagne tout de suite en bloquant, c'est parfait
             if check_win_cached(nb) == player:
                 return mv
-            # Sinon, si l'adversaire n'a plus de win-in-1 après notre coup, on garde ce blocage
             if not _winning_moves_fast(nb, opp, first_only=True, check_time=False):
                 return mv
-
+    # Pas de win-in-1, on lance l'alphabêta itératif
     global A   
 
-
+    # Profondeur adaptative
     if isinstance(depth, str) and depth.upper() == "A":
         A = pick_adaptive_depth(board, base=2, hard_cap=5)
         return find_best_move_iterative(game_instance, max_depth=A, time_budget=time_budget)
 
-
+    # Depth fixe
     try:
         fixed_depth = int(depth)
     except (TypeError, ValueError):
@@ -574,7 +571,7 @@ def print_timing_summary(prefix="[IA]"):
     s = get_timing_stats()
     print(f"{prefix} Coups:{s['moves']} | Moy:{s['avg']:.3f}s | Dernier:{s['last']:.3f}s | Max:{s['longest']:.3f}s (#{s['longest_move_index']})", flush=True)
 
-def timed_find_best_move_minimax(game_instance, depth=2, time_budget=2.5, BOOKING=True):
+def timed_find_best_move_minimax(game_instance, depth=2, time_budget=5, BOOKING=True):
     t0 = time.perf_counter()
     NODES[0] = 0
     NODES_AB[0] = 0

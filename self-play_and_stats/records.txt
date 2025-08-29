@@ -1,17 +1,17 @@
 === Série MM_d1_10s_BOOK  vs  MM_d1_10s   (N=50) ===
-MM_d1_10s_BOOK:   0 victoires | t(avg/med/p95/max)=0.006/0.000/0.000/1.205s
-MM_d1_10s:       50 victoires | t(avg/med/p95/max)=1.338/0.000/10.004/10.079s
-Nuls: 0 (0.0%)
+               MM_d1_10s_BOOK:   0 victoires | t(avg/med/p95/max)=0.006/0.000/0.000/1.205s
+               MM_d1_10s:       50 victoires | t(avg/med/p95/max)=1.338/0.000/10.004/10.079s
+                    Nuls: 0 (0.0%)
 
 === Série MM_d1_2.5s  vs  MCTS_2.5s   (N=150) ===
-MM_d1_2.5s:  150 victoires | t(avg/med/p95/max)=0.513/0.000/2.505/2.517s
-MCTS_2.5s:   0 victoires | t(avg/med/p95/max)=2.505/2.512/2.523/2.602s
-Nuls: 0 (0.0%)
+               MM_d1_2.5s:  150 victoires | t(avg/med/p95/max)=0.513/0.000/2.505/2.517s
+               MCTS_2.5s:   0 victoires | t(avg/med/p95/max)=2.505/2.512/2.523/2.602s
+                    Nuls: 0 (0.0%)
 
 === Série MM_d3_60s  vs  MM_A_60s   (N=150) ===
-MM_d3_2.5s:  11 victoires | t(avg/med/p95/max)=3.319/1.632/10.463/29.805s
-MM_A_2.5s: 64 victoires | t(avg/med/p95/max)=3.263/0.699/11.820/45.329s
-Nuls: 75 (50.0%)
+               MM_d3_2.5s:  11 victoires | t(avg/med/p95/max)=3.319/1.632/10.463/29.805s
+               MM_A_2.5s: 64 victoires | t(avg/med/p95/max)=3.263/0.699/11.820/45.329s
+                    Nuls: 75 (50.0%)
 
 === Série MM_d1_10s  vs  MM_d1_10s  (N=100) ===
                MM_d3_10s:  50 victoires | t(avg/med/p95/max)=0.006/0.001/0.030/0.329s
@@ -27,3 +27,44 @@ Nuls: 75 (50.0%)
                MM_d1_10s:   6 victoires | t(avg/med/p95/max)=0.006/0.001/0.026/0.743s
                MM_d2_10s:   8 victoires | t(avg/med/p95/max)=0.223/0.001/0.529/19.318s
                     Nuls:  86  (86.0%)
+
+=== Série MM_d1_10s  vs  Greedy_+1  (N=100) ===
+               MM_d1_10s: 100 victoires | t(avg/med/p95/max)=0.002/0.001/0.001/0.094s
+               Greedy_+1:   0 victoires | t(avg/med/p95/max)=0.096/0.094/0.109/0.391s
+                    Nuls:   0  (0.0%)
+
+=== Série MM_d1_10s  vs  MM_d2_10s  (N=100) ===
+               MM_d1_10s:  42 victoires | t(avg/med/p95/max)=0.098/0.019/0.468/1.198s
+               MM_d2_10s:  51 victoires | t(avg/med/p95/max)=4.008/0.374/12.828/18.765s
+                    Nuls:   7  (7.0%)
+
+=== Série MM_A_10sNOBOOK  vs  MM_A_10sBOOK  (N=50) ===
+               MM_A_10sNOBOOK:   6 victoires | t(avg/med/p95/max)=4.666/0.095/13.128/20.977s
+               MM_A_10sBOOK:  20 victoires | t(avg/med/p95/max)=0.744/0.025/10.049/13.399s
+                    Nuls:  24  (48.0%)
+
+=== Série MCTS_10s  vs  MM_d3_10s  (N=100) ===
+               MCTS_10s:   0 victoires | t(avg/med/p95/max)=7.933/7.676/10.019/12.069s
+               MM_d1_10s: 100 victoires | t(avg/med/p95/max)=0.070/0.028/0.147/1.565s
+                    Nuls:   0  (0.0%)
+
+=== Série Greedy_A  vs  Greedy_B  (N=100) ===
+                Greedy_A:  50 victoires | t(avg/med/p95/max)=0.090/0.096/0.111/0.437s
+                Greedy_B:  50 victoires | t(avg/med/p95/max)=0.090/0.096/0.113/0.372s
+                    Nuls:   0  (0.0%)
+
+
+=== Série MM_d1_10s  vs  MM_d1_10s  (N=100) ===
+               MM_d1_10s: 100 victoires | t(avg/med/p95/max)=0.005/0.001/0.029/0.453s
+               MM_d1_10s: 100 victoires | t(avg/med/p95/max)=0.005/0.001/0.029/0.453s
+                    Nuls:   0  (0.0%)
+
+=== Série MM_d1_10s  vs  MM_d1_10s_bis  (N=100) ===
+               MM_d1_10s:  50 victoires | t(avg/med/p95/max)=0.005/0.001/0.031/0.083s
+           MM_d1_10s_bis:  50 victoires | t(avg/med/p95/max)=0.005/0.001/0.030/0.464s
+                    Nuls:   0  (0.0%)
+
+=== Série MM_A_10s  vs  MM_d1_10s  (N=150) ===
+                MM_A_10s:  63 victoires | t(avg/med/p95/max)=3.770/0.036/11.573/26.773s
+               MM_d1_10s:  16 victoires | t(avg/med/p95/max)=0.030/0.015/0.128/1.111s
+                    Nuls:  71  (47.3%)

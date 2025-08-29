@@ -17,6 +17,7 @@ from alphabeta_ia.alpha_beta import (
     get_legal_moves              
 )
 from mtcs_ia.optimized_mcts import OptimizedMCTS
+from greedy_ai.greedy_ai import GreedyAI 
 
 
 # Agents unifiés
@@ -47,6 +48,22 @@ class MCTSAgent(AgentBase):
         dt = time.perf_counter() - t0
         return mv, dt
 
+class GreedyAgent(AgentBase):
+    def __init__(self, label: Optional[str] = None):
+        self.impl = GreedyAI(PLAYER_1)  # placeholder
+        self.name = label or "Greedy"
+
+    def on_game_start(self):  # facultatif
+        pass
+
+    def choose_move(self, game: PentagoGame):
+        side = game.current_player
+        self.impl.player = side
+        self.impl.opp = PLAYER_1 if side == PLAYER_2 else PLAYER_2
+        t0 = time.perf_counter()
+        mv = self.impl.choose_move(game)
+        dt = time.perf_counter() - t0
+        return mv, dt
 
 # ---- Boucle d'une partie pour 1 paire ----
 
@@ -110,7 +127,6 @@ def summarize_times(ts: List[float]) -> Dict[str, float]:
 
 def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int = 42,
                record_file = os.path.join(os.path.dirname(__file__), "records.txt")):
-    # nécessite: import os, random
     random.seed(seed); np.random.seed(seed)
 
     wins = {agent1.name: 0, agent2.name: 0}
@@ -118,8 +134,7 @@ def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int 
     times = {agent1.name: [], agent2.name: []}
 
     for i in range(games):
-        # ➜ alterne la personne qui commence: on swap les côtés
-        # PLAYER_1 commence toujours, donc l’agent en position p1 commence.
+
         if i % 2 == 0:
             p1, p2 = agent1, agent2
         else:
@@ -166,16 +181,20 @@ def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int 
 
 if __name__ == "__main__":
     
-    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d1_10s", BOOKING=False)
-    a2 = MinimaxAgent(depth=3,   time_budget=10, label="MM_d2_10s", BOOKING=False)
-    run_series(a1, a2, games=100, seed=1222)
+    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d2_10s", BOOKING=True)
+    a2 = MinimaxAgent(depth=1,   time_budget=10, label="MM_d2_10s_bis", BOOKING=False)
+    #run_series(a2, a1, games=20)
 
    
-    a3 = MinimaxAgent(depth="A", time_budget=10, label="MM_A_10sBOOK", BOOKING=True)
-    a4 = MinimaxAgent(depth="A", time_budget=10, label="MM_d3_10s", BOOKING=False)
-    #run_series(a4, a3, games=50, seed=2013)
+    a3 = MinimaxAgent(depth="A", time_budget=10, label="MM_A_10s", BOOKING=False)
+    a4 = MinimaxAgent(depth="1", time_budget=10, label="MM_d1_10s", BOOKING=False)
+    run_series(a3, a4, games=150)
 
-    # Ex 3) MCTS 1s vs MCTS 2.5s
-    b1 = MCTSAgent(time_limit=5, label="MCTS_1s")
-    a4 = MinimaxAgent(depth=1, time_budget=10, label="MM_d3_10s", BOOKING=False)
-    #run_series(b1, b2, games=100, seed=2024)
+    # Ex 3) MCTS 2.5s vs MCTS 2.5s
+    b1 = MCTSAgent(time_limit=2.5, label="MCTS_1s")
+    b2 = MCTSAgent(time_limit=2.5, label="MCTS_1s")
+    #run_series(b1, b2, games=10, seed=2024)
+
+    gA = GreedyAgent(label="Greedy_A")
+    gB = GreedyAgent(label="Greedy_B")
+    #run_series(gA, gB, games=100)
