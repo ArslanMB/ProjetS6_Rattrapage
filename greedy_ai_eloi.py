@@ -1,5 +1,5 @@
 import math
-from pentago_game import Pentago, Move
+from core.pentago_logic import PentagoGame
 
 class GreedyAI:
     def __init__(self, symbol: str):
