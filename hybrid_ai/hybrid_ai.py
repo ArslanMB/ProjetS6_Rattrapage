@@ -83,7 +83,7 @@ class HybridAI:
         return best_move
 
 
-# Simple CLI demonstration
+# Test CLI
 if __name__ == '__main__':
     try:
         from core.pentago_logic import PentagoGame
