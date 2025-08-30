@@ -1,14 +1,10 @@
 """
-hybrid_ai.py
 
-Hybrid Root-MCTS → Alpha-Beta for Pentago
-
-Strategy:
- 1) Run MCTS at the root for ~60% of the allocated time.
- 2) Take the top-K moves ranked by visits from MCTS.
- 3) For each candidate, apply the move and run a deeper Alpha-Beta search from that child position.
- 4) Return the move with the best Alpha-Beta score.
-
+Stratégie :
+1) Exécuter MCTS à la racine pendant environ 60 % du temps alloué (arbitraire)
+2) Prendre les K meilleurs coups classés par nombre de visites dans MCTS
+3) Pour chaque coup candidat, appliquer le coup et exécuter une recherche Alpha-Bêta plus profonde depuis cette position fille
+4) Retourner le coup avec le meilleur score Alpha-Bêta
 """
 
 import time
@@ -20,25 +16,25 @@ import alphabeta_ia.alpha_beta as ab
 class HybridAI:
     def __init__(self, total_time=3.0, top_k=5, ab_depth_or_A='A'):
         """
-        total_time: total time budget in seconds for find_move
-        top_k: number of top candidate moves from MCTS to check with Alpha-Beta
-        ab_depth_or_A: depth parameter for alpha_beta.find_best_move_minimax
+        total_time : budget de temps total en secondes pour find_move
+        top_k : nombre de meilleurs coups candidats issus de MCTS à vérifier avec Alpha-Bêta
+        ab_depth_or_A : paramètre de profondeur pour alpha_beta.find_best_move_minimax
         """
         self.total_time = float(total_time)
         self.top_k = int(top_k)
         self.ab_depth_or_A = ab_depth_or_A
 
     def find_move(self, game_instance):
-        """Return a move (r,c,quad,d) for the given PentagoGame instance."""
+        """Renvoie un move (r,c,quad,d) pour l'instance PentagoGame donnée."""
         t0 = time.perf_counter()
         player = game_instance.current_player
 
-        # 1) Run MCTS at the root
+        # 1) MCTS à la racine
         mcts_time = self.total_time * 0.6
         mcts = OptimizedMCTS(time_limit=mcts_time)
         best_from_mcts = mcts.find_best_move(game_instance)
 
-        # 2) Get top-K moves by visits
+        # 2) Récupère les top-K moves les plus visités
         candidates = []
         if hasattr(mcts, 'root') and mcts.root and mcts.root.children:
             children_sorted = sorted(mcts.root.children, key=lambda c: c.visits, reverse=True)
@@ -51,25 +47,25 @@ class HybridAI:
             legal = ab.get_legal_moves(game_instance.board)
             return legal[0] if legal else None
 
-        # 3) For each candidate, run Alpha-Beta from that child position
+        # 3) Pour chaque candidat on fait tourner AB à partir de ce child
         best_move = None
         best_score = -float("inf")
         per_candidate_time = (self.total_time - (time.perf_counter() - t0)) / max(1, len(candidates))
 
         for mv in candidates:
-            # Apply the candidate move
+            # Appliquer le move candidat
             board2 = ab.apply_move_cached(game_instance.board, mv, player)
 
-            # Create a minimal PentagoGame-like object for AB search
+            # PentagoGame factice minimal pour AB
             class _TmpGame:
                 def __init__(self, board, current_player):
                     self.board = np.copy(board)
-                    self.current_player = -current_player
+                    self.current_player = -current_player # car après avoir jouer notre coup candidat, c'est à ladversaire de jouer
 
             tmp = _TmpGame(board2, player)
 
             try:
-                # Timed Alpha-Beta search on the resulting position
+                # recherche AB timée, sur les positions obtenue par les candidats
                 _, score = ab.timed_find_best_move_minimax(
                     tmp,
                     depth=self.ab_depth_or_A,
@@ -77,7 +73,7 @@ class HybridAI:
                     return_score=True
                 )
             except Exception:
-                # fallback to static eval if AB fails
+                # retour à une évaluation statique si AB ne fonctionne pas
                 score = ab.evaluate(board2, player)
 
             if score > best_score:
