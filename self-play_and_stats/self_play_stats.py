@@ -18,7 +18,7 @@ from alphabeta_ia.alpha_beta import (
 )
 from mtcs_ia.optimized_mcts import OptimizedMCTS
 from greedy_ai.greedy_ai import GreedyAI 
-
+from hybrid_ia.hybrid_ai import HybridAI 
 
 # Agents unifiés
 
@@ -62,6 +62,21 @@ class GreedyAgent(AgentBase):
         self.impl.opp = PLAYER_1 if side == PLAYER_2 else PLAYER_2
         t0 = time.perf_counter()
         mv = self.impl.choose_move(game)
+        dt = time.perf_counter() - t0
+        return mv, dt
+
+class HybridAgent(AgentBase):
+    def __init__(self, total_time: float = 3.0, top_k: int = 5, ab_depth: Any = "A", label: Optional[str] = None):
+        self.impl = HybridAI(total_time=total_time, top_k=top_k, ab_depth_or_A=ab_depth)
+        self.name = label or f"Hybrid_t{total_time:g}s_K{top_k}_d{ab_depth}"
+
+    def on_game_start(self):
+        pass
+
+    def choose_move(self, game: PentagoGame):
+        import time
+        t0 = time.perf_counter()
+        mv = self.impl.find_move(game)
         dt = time.perf_counter() - t0
         return mv, dt
 
@@ -181,20 +196,20 @@ def run_series(agent1: AgentBase, agent2: AgentBase, games: int = 50, seed: int 
 
 if __name__ == "__main__":
     
-    a1 = MinimaxAgent(depth=1, time_budget=10, label="MM_d2_10s", BOOKING=True)
-    a2 = MinimaxAgent(depth=1,   time_budget=10, label="MM_d2_10s_bis", BOOKING=False)
-    #run_series(a2, a1, games=20)
+    a1 = MinimaxAgent(depth=2, time_budget=10, label="MM_d2_10s_BOOK", BOOKING=True)
+    b2 = MCTSAgent(time_limit=10, label="MCTS_10s")
+    #run_series(a2, a1, games=100)
 
    
-    a3 = MinimaxAgent(depth="A", time_budget=10, label="MM_A_10s", BOOKING=False)
-    a4 = MinimaxAgent(depth="1", time_budget=10, label="MM_d1_10s", BOOKING=False)
-    run_series(a3, a4, games=150)
+    a3 = MinimaxAgent(depth=3, time_budget=20, label="MM_3_BOOK", BOOKING=True)
+    a4 = MinimaxAgent(depth=3, time_budget=20, label="MM_d1_NOBOOK", BOOKING=False)
+    #run_series(a3, a4, games=100)
 
     # Ex 3) MCTS 2.5s vs MCTS 2.5s
-    b1 = MCTSAgent(time_limit=2.5, label="MCTS_1s")
-    b2 = MCTSAgent(time_limit=2.5, label="MCTS_1s")
-    #run_series(b1, b2, games=10, seed=2024)
+    gA = GreedyAgent(label="Greedy_A")
+    b2 = MCTSAgent(time_limit=10, label="MCTS_1s_bis")
+    #run_series(gA, b2, games=1)
 
     gA = GreedyAgent(label="Greedy_A")
-    gB = GreedyAgent(label="Greedy_B")
-    #run_series(gA, gB, games=100)
+    hy = HybridAgent(total_time=10, top_k=5, ab_depth="A", label="Hybrid_10s")
+    run_series(gA, hy, games=10)
