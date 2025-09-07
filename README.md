@@ -1,6 +1,6 @@
 # Pentago — Projet S6 Rattrapage
 
-Implémentation du jeu Pentago (6×6, quadrants 3×3) avec interface Pygame et IA (Alpha-Beta, MCTS, Glouton). Modes : PvP, PvIA, IA-IA.
+Implémentation du jeu Pentago (6×6, quadrants 3×3) avec interface Pygame, IA (Alpha-Beta, MCTS, Glouton) et script pour tournois d'IA . Modes : PvP, PvIA, IA-IA.
 
 ## Prérequis
 
@@ -12,6 +12,10 @@ Implémentation du jeu Pentago (6×6, quadrants 3×3) avec interface Pygame et I
 À la racine du projet :
 
 python main.py
+
+ou pour les tournois d'IA :
+
+python self_play_stats.py
 
 ## Commandes
 
