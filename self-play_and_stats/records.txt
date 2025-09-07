@@ -107,3 +107,13 @@
                 Greedy_A:  10 victoires | t(avg/med/p95/max)=0.083/0.094/0.114/0.231s
               Hybrid_10s:   0 victoires | t(avg/med/p95/max)=5.987/6.014/6.025/6.041s
                     Nuls:   0  (0.0%)
+
+=== Série MM_d2_10s  vs  Hybrid_10s  (N=100) ===
+               MM_d2_10s:   100 victoires | t(avg/med/p95/max)=2.050/1.504/6.784/6.784s
+              Hybrid_10s:   0 victoires | t(avg/med/p95/max)=6.013/6.015/6.021/6.021s
+                    Nuls:   0  (0.0%)
+
+=== Série MCTS_10s  vs  Hybrid_10s  (N=100) ===
+                MCTS_10s:   0 victoires | t(avg/med/p95/max)=8.888/10.005/10.007/10.007s
+              Hybrid_10s:   100 victoires | t(avg/med/p95/max)=5.879/6.009/6.027/6.027s
+                    Nuls:   0  (0.0%)

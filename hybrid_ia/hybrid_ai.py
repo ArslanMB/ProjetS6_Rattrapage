@@ -1,12 +1,3 @@
-"""
-
-Stratégie :
-1) Exécuter MCTS à la racine pendant environ 60 % du temps alloué (arbitraire)
-2) Prendre les K meilleurs coups classés par nombre de visites dans MCTS
-3) Pour chaque coup candidat, appliquer le coup et exécuter une recherche Alpha-Bêta plus profonde depuis cette position fille
-4) Retourner le coup avec le meilleur score Alpha-Bêta
-"""
-
 import time
 import numpy as np
 from mtcs_ia.optimized_mcts import OptimizedMCTS

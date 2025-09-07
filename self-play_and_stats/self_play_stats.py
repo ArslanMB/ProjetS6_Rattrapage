@@ -210,6 +210,6 @@ if __name__ == "__main__":
     b2 = MCTSAgent(time_limit=10, label="MCTS_1s_bis")
     #run_series(gA, b2, games=1)
 
-    gA = GreedyAgent(label="Greedy_A")
+    gA = MCTSAgent(time_limit=10, label="MCTS_10s")
     hy = HybridAgent(total_time=10, top_k=5, ab_depth="A", label="Hybrid_10s")
-    run_series(gA, hy, games=10)
+    run_series(gA, hy, games=1)

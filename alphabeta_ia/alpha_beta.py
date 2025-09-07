@@ -358,13 +358,13 @@ def alphabeta(board, depth, alpha, beta, maximizing, root_player, ply=0):
                 block_now = 1
             is_quiet = (win_now == 0 and block_now == 0)
 
-            # Futility (safe): pas au root, pas sous menace, pas sur les tous premiers coups
+            # Futility : pas au root, pas sous menace, pas sur les tous premiers coups
             if (static_eval is not None and depth == FUT_DEPTH and i >= 6
                 and is_quiet and not opp_wins_before and ply >= 2):
                 if static_eval + FUT_MARGIN <= alpha:
                     continue
 
-            # LMR (safe)
+            # LMR 
             reduced = (depth >= 3 and i >= 12 and is_quiet and not opp_wins_before and ply >= 2)
             child_depth = depth - 1 - (1 if reduced else 0)
 
