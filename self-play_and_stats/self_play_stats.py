@@ -16,7 +16,7 @@ from alphabeta_ia.alpha_beta import (
     check_win_cached,             
     get_legal_moves              
 )
-from mtcs_ia.optimized_mcts import OptimizedMCTS
+from mtcs_ia.mcts_fast import MCTS_Fast
 from greedy_ai.greedy_ai import GreedyAI 
 from hybrid_ia.hybrid_ai import HybridAI 
 
@@ -40,7 +40,7 @@ class MinimaxAgent(AgentBase):
 
 class MCTSAgent(AgentBase):
     def __init__(self, time_limit: float = 2.5, exploration_constant: float = 1.41, label: Optional[str] = None):
-        self.bot = OptimizedMCTS(time_limit=float(time_limit), exploration_constant=float(exploration_constant))
+        self.bot = MCTS_Fast(time_limit=float(time_limit), exploration_constant=float(exploration_constant))
         self.name = label or f"MCTS_t{time_limit:g}s_C{exploration_constant:g}"
     def choose_move(self, game: PentagoGame):
         t0 = time.perf_counter()
@@ -201,8 +201,8 @@ if __name__ == "__main__":
     #run_series(a2, a1, games=100)
 
    
-    a3 = MinimaxAgent(depth=3, time_budget=20, label="MM_3_BOOK", BOOKING=True)
-    a4 = MinimaxAgent(depth=3, time_budget=20, label="MM_d1_NOBOOK", BOOKING=False)
+    a3 = MinimaxAgent(depth=3, time_budget=1, label="MM_3_BOOK", BOOKING=True)
+    a4 = MinimaxAgent(depth=3, time_budget=10, label="MM_d1_NOBOOK", BOOKING=False)
     #run_series(a3, a4, games=100)
 
     # Ex 3) MCTS 2.5s vs MCTS 2.5s
@@ -212,4 +212,9 @@ if __name__ == "__main__":
 
     gA = GreedyAgent(label="Greedy_A")
     hy = HybridAgent(total_time=10, top_k=5, ab_depth="A", label="Hybrid_10s")
-    run_series(gA, hy, games=10)
+    #run_series(gA, hy, games=10)
+
+
+    b1= MCTSAgent(time_limit=10,exploration_constant=0.7, label="MCTS_1s_")
+    b2 = MCTSAgent(time_limit=1, exploration_constant=0.8,label="MCTS_1s_bis")
+    run_series(b1,a1 , games=100)

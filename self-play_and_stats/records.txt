@@ -107,3 +107,23 @@
                 Greedy_A:  10 victoires | t(avg/med/p95/max)=0.083/0.094/0.114/0.231s
               Hybrid_10s:   0 victoires | t(avg/med/p95/max)=5.987/6.014/6.025/6.041s
                     Nuls:   0  (0.0%)
+
+=== Série MCTS_1s_  vs  MCTS_1s_bis  (N=10) ===
+                MCTS_1s_:   4 victoires | t(avg/med/p95/max)=0.995/1.138/1.397/1.657s
+             MCTS_1s_bis:   6 victoires | t(avg/med/p95/max)=1.016/1.094/1.447/1.562s
+                    Nuls:   0  (0.0%)
+
+=== Série MM_3_BOOK  vs  MCTS_1s_bis  (N=10) ===
+               MM_3_BOOK:   9 victoires | t(avg/med/p95/max)=3.908/1.769/16.267/37.224s
+             MCTS_1s_bis:   1 victoires | t(avg/med/p95/max)=0.745/1.028/1.099/1.144s
+                    Nuls:   0  (0.0%)
+
+=== Série MCTS_1s_  vs  Greedy_A  (N=10) ===
+                MCTS_1s_:   1 victoires | t(avg/med/p95/max)=0.751/1.012/1.206/1.400s
+                Greedy_A:   9 victoires | t(avg/med/p95/max)=0.243/0.274/0.353/0.440s
+                    Nuls:   0  (0.0%)
+
+=== Série MCTS_1s_  vs  MM_d2_10s_BOOK  (N=100) ===
+                MCTS_1s_:  16 victoires | t(avg/med/p95/max)=8.637/9.800/9.888/1116.302s
+          MM_d2_10s_BOOK:  84 victoires | t(avg/med/p95/max)=42.843/7.652/27.418/10808.912s
+                    Nuls:   0  (0.0%)

@@ -1,4 +1,3 @@
-# mcts_ia/mcts.py
 
 import numpy as np
 import random
@@ -73,21 +72,15 @@ class MCTSNode:
         return best_child
 
     def expand(self):
-        """
-        Expands the tree by creating a new child node for one of the untried moves.
-        """
         if not self.untried_moves:
             return None
 
         move = self.untried_moves.pop()
         r, c, quad_idx, direction = move
 
+        # Toujours appliquer placement + rotation
         board_after_placement = PentagoGame.get_board_after_placement(self.board_state, r, c, self.player)
-        
-        if PentagoGame.check_win_on_board(board_after_placement) != 0:
-            new_board_state = board_after_placement
-        else:
-            new_board_state = PentagoGame.get_board_after_rotation(board_after_placement, quad_idx, direction)
+        new_board_state = PentagoGame.get_board_after_rotation(board_after_placement, quad_idx, direction)
 
         child_node = MCTSNode(
             board_state=new_board_state,
@@ -105,9 +98,9 @@ class MCTSNode:
         node = self
         while node is not None:
             node.visits += 1
-            if node.parent and node.parent.player == result:
+            if result == node.player:  # Le nœud gagne si le résultat correspond à son joueur
                 node.wins += 1
-            elif result == 0 or result == 2: # Draw or double-win
+            elif result == 0 or result == 2:  # Match nul ou double victoire
                 node.wins += 0.5
             node = node.parent
 
@@ -177,31 +170,33 @@ class MCTS_AI:
     # ================= FINAL, HIGH-SPEED SIMULATION ==================
     # =================================================================
     def _simulate_fast(self, node):
-        """
-        Plays a random game to completion from the node's state.
-        Crucially, it only checks for a winner ONCE at the very end.
-        """
         board = np.copy(node.board_state)
         player = node.player
         
-        empty_cells = list(zip(*np.where(board == 0)))
-        random.shuffle(empty_cells)
-        
-        # Play moves until the board is full
-        while empty_cells:
-            r, c = empty_cells.pop()
+        while True:
+            # Vérifier victoire
+            winner = PentagoGame.check_win_on_board(board)
+            if winner != 0:
+                return winner
+                
+            # Chercher cases vides
+            empty_cells = list(zip(*np.where(board == 0)))
+            if not empty_cells:
+                return PentagoGame.check_win_on_board(board)
+            
+            # Placement aléatoire
+            r, c = random.choice(empty_cells)
             board[r, c] = player
             
-            # Perform a random rotation
+            # Vérifier victoire après placement
+            winner = PentagoGame.check_win_on_board(board)
+            if winner != 0:
+                return winner
+            
+            # Rotation obligatoire
             quad_idx = random.randint(0, 3)
             direction = random.choice([-1, 1])
-            
-            row_start = (quad_idx // 2) * QUADRANT_SIZE
-            col_start = (quad_idx % 2) * QUADRANT_SIZE
-            
-            quadrant_slice = board[row_start:row_start+QUADRANT_SIZE, col_start:col_start+QUADRANT_SIZE]
-            rotated_slice = np.rot90(quadrant_slice, k=direction)
-            board[row_start:row_start+QUADRANT_SIZE, col_start:col_start+QUADRANT_SIZE] = rotated_slice
+            board = PentagoGame.get_board_after_rotation(board, quad_idx, direction)
             
             player = -player
             
