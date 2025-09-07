@@ -4,7 +4,7 @@ import time
 
 from core.pentago_logic import PentagoGame 
 from core.constants import PLAYER_1, PLAYER_2, BOARD_ROWS, BOARD_COLS, QUADRANT_SIZE
-from mtcs_ia.optimized_mcts import OptimizedMCTS
+from mtcs_ia.mcts_fast import MCTS_Fast
 from alphabeta_ia.alpha_beta import (timed_find_best_move_minimax, reset_timing, get_timing_stats)
 
 # -- UI --
@@ -27,7 +27,7 @@ def main():
     msg_font = pygame.font.Font(None, 60)
     restart_font = pygame.font.Font(None, 30)
 
-    mcts_bot=OptimizedMCTS(time_limit=10.0, exploration_constant=0.7)
+    mcts_bot=MCTS_Fast(time_limit=10.0, exploration_constant=0.7)
     
     # Boutons du menu
     start_pvp_button_rect = pygame.Rect(SCREEN_WIDTH / 2 - 150, SCREEN_HEIGHT / 2 - 110, 300, 70)

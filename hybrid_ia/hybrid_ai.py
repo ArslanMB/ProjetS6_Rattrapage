@@ -9,7 +9,7 @@ Stratégie :
 
 import time
 import numpy as np
-from mtcs_ia.optimized_mcts import OptimizedMCTS
+from mtcs_ia.mcts_fast import MCTS_Fast
 import alphabeta_ia.alpha_beta as ab
 
 
@@ -31,7 +31,7 @@ class HybridAI:
 
         # 1) MCTS à la racine
         mcts_time = self.total_time * 0.6
-        mcts = OptimizedMCTS(time_limit=mcts_time)
+        mcts = MCTS_Fast(time_limit=mcts_time)
         best_from_mcts = mcts.find_best_move(game_instance)
 
         # 2) Récupère les top-K moves les plus visités
