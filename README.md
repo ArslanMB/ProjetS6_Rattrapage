@@ -1,17 +1,17 @@
-# 🎯 Pentago IA - Implémentation avancée avec agents intelligents
+#  Pentago IA - Implémentation avancée avec agents intelligents
 
-## 📋 Vue d'ensemble
+##  Vue d'ensemble
 
 Implémentation complète du jeu de stratégie **Pentago** avec interface graphique PyGame et plusieurs agents d'intelligence artificielle. Le projet intègre des algorithmes de recherche avancés (Alpha-Beta, MCTS) avec optimisations de performance et système d'évaluation statistique complet.
 
 ### Caractéristiques principales
-- 🎮 Interface graphique interactive avec animations de rotation fluides
-- 🤖 5 types d'agents IA avec niveaux de difficulté variés
-- 📊 Système d'analyse statistique pour comparaison d'agents
-- ⚡ Optimisations avancées (caches, tables de transposition, livre d'ouvertures)
-- 🔬 Suite de tests et benchmarks pour évaluation de performance
+-  Interface graphique interactive avec animations de rotation fluides
+-  5 types d'agents IA avec niveaux de difficulté variés
+-  Système d'analyse statistique pour comparaison d'agents
+-  Optimisations avancées (caches, tables de transposition, livre d'ouvertures)
+-  Suite de tests et benchmarks pour évaluation de performance
 
-## 🏗️ Architecture du projet
+##  Architecture du projet
 
 ```
 pentago/
