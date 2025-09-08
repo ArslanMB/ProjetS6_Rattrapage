@@ -1,0 +1,69 @@
+================================================================================
+RAPPORT D'ANALYSE STATISTIQUE COMPLET
+MCTS_5s_C1.41 vs Minimax_d2_tb1s
+Nombre de parties: 200
+================================================================================
+
+1. RÉSULTATS PRINCIPAUX
+----------------------------------------
+  MCTS_5s_C1.41:
+    - Victoires: 9/200 (0.045)
+    - IC Wilson 95%: [0.024, 0.083]
+  Minimax_d2_tb1s:
+    - Victoires: 190/200 (0.950)
+    - IC Wilson 95%: [0.910, 0.973]
+  Matchs nuls: 1 (0.005)
+
+2. TESTS STATISTIQUES
+----------------------------------------
+  Test de permutation:
+    - Différence observée: -0.9050
+    - p-value: 0.0000
+    - Significatif (α=0.05): OUI ✓
+  Bootstrap CI pour différence:
+    - Différence moyenne: -0.9050
+    - IC 95%: [-0.9450, -0.8600]
+    - Contient zéro: NON (différence significative)
+
+3. SCORES ELO
+----------------------------------------
+  Scores finaux:
+    - MCTS_5s_C1.41: 1225
+    - Minimax_d2_tb1s: 1775
+  Différence Elo: -549
+  Interprétation: Domination nette
+
+4. ANALYSE TEMPORELLE
+----------------------------------------
+  MCTS_5s_C1.41:
+    - Temps moyen/coup: 0.762s
+    - Écart-type: 0.115s
+    - Médiane: 0.806s
+    - Maximum: 1.761s
+  Minimax_d2_tb1s:
+    - Temps moyen/coup: 3.072s
+    - Écart-type: 1.766s
+    - Médiane: 2.467s
+    - Maximum: 41.750s
+
+5. LONGUEUR DES PARTIES
+----------------------------------------
+  Nombre de coups moyen: 12.1 (±4.3)
+  Médiane: 10
+  Min-Max: [9, 37]
+
+6. INFLUENCE DU PREMIER JOUEUR
+----------------------------------------
+  MCTS_5s_C1.41_as_agent1:
+    - Parties: 200
+    - Victoires: 9
+    - Win rate: 0.045
+    - IC 95%: [0.024, 0.083]
+
+7. CONCLUSION
+----------------------------------------
+  → Minimax_d2_tb1s est supérieur avec différence statistiquement significative
+  → p-value = 0.0000
+  → Taille d'effet = 0.905
+
+================================================================================

@@ -1,0 +1,69 @@
+================================================================================
+RAPPORT D'ANALYSE STATISTIQUE COMPLET
+MCTS_5s_C1.41 vs Greedy
+Nombre de parties: 200
+================================================================================
+
+1. RÉSULTATS PRINCIPAUX
+----------------------------------------
+  MCTS_1s_C1.41:
+    - Victoires: 24/200 (0.120)
+    - IC Wilson 95%: [0.082, 0.172]
+  Greedy:
+    - Victoires: 176/200 (0.880)
+    - IC Wilson 95%: [0.828, 0.918]
+  Matchs nuls: 0 (0.000)
+
+2. TESTS STATISTIQUES
+----------------------------------------
+  Test de permutation:
+    - Différence observée: -0.7600
+    - p-value: 0.0000
+    - Significatif (α=0.05): OUI ✓
+  Bootstrap CI pour différence:
+    - Différence moyenne: -0.7600
+    - IC 95%: [-0.8200, -0.6950]
+    - Contient zéro: NON (différence significative)
+
+3. SCORES ELO
+----------------------------------------
+  Scores finaux:
+    - MCTS_1s_C1.41: 1347
+    - Greedy: 1653
+  Différence Elo: -305
+  Interprétation: Domination nette
+
+4. ANALYSE TEMPORELLE
+----------------------------------------
+  MCTS_1s_C1.41:
+    - Temps moyen/coup: 0.758s
+    - Écart-type: 0.177s
+    - Médiane: 0.793s
+    - Maximum: 8.320s
+  Greedy:
+    - Temps moyen/coup: 0.246s
+    - Écart-type: 0.092s
+    - Médiane: 0.207s
+    - Maximum: 2.751s
+
+5. LONGUEUR DES PARTIES
+----------------------------------------
+  Nombre de coups moyen: 11.6 (±4.3)
+  Médiane: 10
+  Min-Max: [9, 28]
+
+6. INFLUENCE DU PREMIER JOUEUR
+----------------------------------------
+  MCTS_1s_C1.41_as_agent1:
+    - Parties: 200
+    - Victoires: 24
+    - Win rate: 0.120
+    - IC 95%: [0.082, 0.172]
+
+7. CONCLUSION
+----------------------------------------
+  → Greedy est supérieur avec différence statistiquement significative
+  → p-value = 0.0000
+  → Taille d'effet = 0.760
+
+================================================================================

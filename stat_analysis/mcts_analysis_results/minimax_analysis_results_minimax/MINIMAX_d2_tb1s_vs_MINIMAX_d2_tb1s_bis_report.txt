@@ -1,0 +1,69 @@
+================================================================================
+RAPPORT D'ANALYSE STATISTIQUE COMPLET
+MINIMAX_d2_tb1s vs MINIMAX_d2_tb1s_bis
+Nombre de parties: 200
+================================================================================
+
+1. RÉSULTATS PRINCIPAUX
+----------------------------------------
+  MINIMAX_d2_tb1s:
+    - Victoires: 54/200 (0.270)
+    - IC Wilson 95%: [0.213, 0.335]
+  MINIMAX_d2_tb1s_bis:
+    - Victoires: 46/200 (0.230)
+    - IC Wilson 95%: [0.177, 0.293]
+  Matchs nuls: 100 (0.500)
+
+2. TESTS STATISTIQUES
+----------------------------------------
+  Test de permutation:
+    - Différence observée: 0.0400
+    - p-value: 0.4272
+    - Significatif (α=0.05): NON ✗
+  Bootstrap CI pour différence:
+    - Différence moyenne: 0.0400
+    - IC 95%: [-0.0450, 0.1250]
+    - Contient zéro: OUI (pas de différence significative)
+
+3. SCORES ELO
+----------------------------------------
+  Scores finaux:
+    - MINIMAX_d2_tb1s: 1500
+    - MINIMAX_d2_tb1s_bis: 1500
+  Différence Elo: 0
+  Interprétation: Forces équivalentes
+
+4. ANALYSE TEMPORELLE
+----------------------------------------
+  MINIMAX_d2_tb1s:
+    - Temps moyen/coup: 1.106s
+    - Écart-type: 1.640s
+    - Médiane: 0.406s
+    - Maximum: 88.326s
+  MINIMAX_d2_tb1s_bis:
+    - Temps moyen/coup: 2.131s
+    - Écart-type: 11.348s
+    - Médiane: 0.416s
+    - Maximum: 1709.961s
+
+5. LONGUEUR DES PARTIES
+----------------------------------------
+  Nombre de coups moyen: 28.8 (±9.1)
+  Médiane: 34
+  Min-Max: [10, 37]
+
+6. INFLUENCE DU PREMIER JOUEUR
+----------------------------------------
+  MINIMAX_d2_tb1s_as_agent1:
+    - Parties: 200
+    - Victoires: 54
+    - Win rate: 0.270
+    - IC 95%: [0.213, 0.335]
+
+7. CONCLUSION
+----------------------------------------
+  → MINIMAX_d2_tb1s est supérieur mais sans différence statistiquement significative
+  → p-value = 0.4272
+  → Taille d'effet = 0.040
+
+================================================================================
